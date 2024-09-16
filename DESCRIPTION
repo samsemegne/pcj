@@ -1,0 +1,30 @@
+Package: pcj
+Title: Process Capability with JAGS
+Version: 0.0.0.9000
+Authors@R: 
+    person("Sam", "Semegne", email = "sam.ahoi@hotmail.com", role = c("aut", "cre"))
+Maintainer: Sam Semegne <sam.ahoi@hotmail.com>
+Description: What the package does (one paragraph).
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports: 
+  vek (>= 1.0.0),
+  pci (>= 1.0.1),
+  rjags (>= 4.15),
+  stats (>= 4.4.0),
+  graphics (>= 4.4.0),
+  utils (>= 4.4.0)
+Depends: 
+  R (>= 4.4.0)
+Suggests: 
+  knitr,
+  rmarkdown,
+  tinytest (>= 1.4.1),
+  devtools (>= 2.4.5)
+Enhances:
+  R6 (>= 2.5.1),
+  ggplot2 (>= 3.5.1)
+VignetteBuilder: knitr
+URL: https://github.com/samsemegne/pcj
