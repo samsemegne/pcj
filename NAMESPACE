@@ -2,6 +2,8 @@
 
 S3method(get_sample,pcj_model1)
 S3method(get_sample,pcj_prior_predictive1)
+S3method(ggplot_add,pcj_plot_object)
+S3method(ggplot_add,pcj_plot_object_list)
 S3method(plot,pcj_plot_object)
 S3method(plot,pcj_plot_object_list)
 S3method(print,pcj_plot_object)

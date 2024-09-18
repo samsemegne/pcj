@@ -59,7 +59,7 @@ plot_prior_predictive = function(
     object,
     ...,
     x = NULL,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
@@ -100,7 +100,7 @@ plot_posterior = function(
     object,
     ...,
     x = NULL,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
@@ -319,21 +319,15 @@ plot_prior_ = function(
 
   stopifnot(is_uniquely_named_list(dots))
 
-  at = NULL
-  if ("at" %in% names(dots))
-    at = dots$at
-
-  stopifnot(exprs = {
-    vek::is_num_vec_xyz(at) || is.null(at)
-  })
-
   var_name = x
   rm(x)
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
 
+  at = list_get2(dots, "at")
   if (!is.null(at)) {
     stopifnot(exprs = {
+      vek::is_num_vec_xyz(at)
       length(at) > 1L
       !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
       #is_within_var_bounds(at, var_bounds) # TODO
@@ -359,7 +353,7 @@ plot_prior_ = function(
   stopifnot(is.pcj_jags_dist(prior_obj))
 
   # Determine x.
-  if ("xlim" %in% names(dots))
+  if ("xlim" %in% names(dots) && !is.null(dots$xlim))
     xlim = dots$xlim
   else if (!is.null(at))
     xlim = range(at, na.rm = FALSE)
@@ -469,14 +463,14 @@ plot_prior_predictive_ = function(
     object,
     ...,
     x = NULL,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
     vek::is_chr_vec_xb1(x)
-    is.function(stat)
+
     #vek::is_num_vec_xyz(transform) # TODO
     # TODO check x %in% c(...)
   })
@@ -485,11 +479,21 @@ plot_prior_predictive_ = function(
   #if (...length() > 0L)
   #  if (dots_names(...)[1L] == "")
   #    graphics = ...elt(1L)
-#
+  #
   #stopifnot(exprs = {
   #  vek::is_chr_vec_xb1(graphics)
   #  graphics %in% c("lines.default")
   #})
+
+  if (is.null(stat)) {
+    stat = gaussian_density
+  } else {
+    stopifnot(exprs = {
+      !is.object(stat)
+      is.function(stat)
+      length(formals(stat)) > 0L
+    })
+  }
 
   dots = list(...)
   #browser()
@@ -534,28 +538,72 @@ plot_prior_predictive_ = function(
   #  dots$class = NULL
 
   samples = get_sample.pcj_prior_predictive1(object$prior_study, var_name)
-  dens_args = list(
-    samples,
-    # Ellipsis arguments
-    var_name = var_name,
-    upper_bound = var_bounds$upper,
-    lower_bound = var_bounds$lower # TODO calculate bounds given known truncation?
-  )
+  stat_args = list(samples)
+  if ("..." %in% names(formals(stat))) {
+    # Provide metadata about the variable.
+    #stat_args = c(stat_args, list(
+    #  var_name = var_name,
+    #  lower_bound = var_bounds$lower,
+    #  upper_bound = var_bounds$upper
+    #))
+  }
 
-  dens_obj = do.call(stat, dens_args)
+  stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
+  if (is_list(unclass(stat_obj_$result)))
+    stat_obj = rapply(stat_obj_$result, unclass, "ANY", NULL, "list") # TODO first check all are list or function
+  else
+    stat_obj = unclass(stat_obj_$result)
+
+  stopifnot(exprs = {
+    is.function(stat_obj) || is_list(stat_obj)
+  })
+
+  dens_obj = NULL
+  if (is_xy_density(stat_obj))
+    dens_obj = stat_obj
+  else if (is.function(stat_obj))
+    dens_obj = stat_obj
+  else if (is_list(stat_obj) && is_xy_density(stat_obj$density))
+    dens_obj = stat_obj$density
+  else if (is_list(stat_obj) && is.function(stat_obj$density))
+    dens_obj = stat_obj$density
+  else
+    stop()
+
+  stopifnot(exprs = {
+    is_xy_density(dens_obj) || is.function(dens_obj)
+  })
+
+  if (is.function(dens_obj)) {
+    stopifnot(exprs = {
+      length(formals(dens_obj)) > 0L
+    })
+  }
+  else if (is_xy_density(dens_obj)) {
+    stopifnot(exprs = {
+      vek::is_num_vec_xyz(dens_obj$x)
+      # TODO check for no more than 2 repetitions
+      !is.unsorted(dens_obj$x, na.rm = FALSE, strictly = FALSE)
+      vek::is_num_vec_xyz(dens_obj$y)
+      length(dens_obj$x) == length(dens_obj$y)
+      length(dens_obj$x) > 1L
+    })
+  } else {
+    stop()
+  }
 
   xlim = NULL
-  if ("xlim" %in% names(dots)) {
+  if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
   } else {
-    if (is.function(dens_obj))
+    if (is.function(stat_obj))
       xlim = range(samples, na.rm = TRUE)
     else
-      xlim = range(dens_obj$x, na.rm = TRUE)
+      xlim = range(stat_obj$x, na.rm = TRUE)
   }
 
   if (is.null(at))
-    x = seq.default(xlim[1L], xlim[2L], length.out = 501L) # TODO case is.null(xlim)!
+    x = seq.default(xlim[1L], xlim[2L], length.out = 501L)
   else
     x = at
 
@@ -677,17 +725,27 @@ plot_posterior_ = function(
     object,
     ...,
     x = NULL,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
     vek::is_chr_vec_xb1(x)
-    is.function(stat)
+
     #vek::is_num_vec_xyz(transform) # TODO
     #x %in% c("mu", "sigma") # TODO
   })
+
+  if (is.null(stat)) {
+    stat = gaussian_density
+  } else {
+    stopifnot(exprs = {
+      !is.object(stat)
+      is.function(stat)
+      length(formals(stat)) > 0L
+    })
+  }
 
   graphics = "lines.default"
   if (...length() > 0L)
@@ -705,8 +763,10 @@ plot_posterior_ = function(
       dots = dots[-1L]
 
   at = NULL
-  if ("at" %in% names(dots))
+  if ("at" %in% names(dots)) {
     at = dots$at
+    dots$at = NULL
+  }
 
   stopifnot({
     vek::is_num_vec_xyz(at) || is.null(at)
@@ -756,35 +816,87 @@ plot_posterior_ = function(
     stop()
   }
 
-  dens_args = list(
-    samples,
-    # Ellipsis arguments
-    var_name = var_name, # TODO check formals first
-    lower_bound = var_bounds$lower, # TODO calculate bounds given known truncation?
-    upper_bound = var_bounds$upper
-  )
+  stat_args = list(samples)
+  if ("..." %in% names(formals(stat))) {
+    # Provide metadata about the variable.
+    #stat_args = c(stat_args, list(
+    #  var_name = var_name,
+    #  lower_bound = var_bounds$lower,
+    #  upper_bound = var_bounds$upper
+    #))
+  }
 
-  dens_obj = do.call(stat, dens_args)
+  stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
+  if (is_list(unclass(stat_obj_$result)))
+    stat_obj = rapply(stat_obj_$result, unclass, "ANY", NULL, "list") # TODO first check all are list or function
+  else
+    stat_obj = unclass(stat_obj_$result)
 
-  if ("xlim" %in% dots) {
+  stopifnot(exprs = {
+    is.function(stat_obj) || is_list(stat_obj)
+  })
+
+  dens_obj = NULL
+  if (is_xy_density(stat_obj))
+    dens_obj = stat_obj
+  else if (is.function(stat_obj))
+    dens_obj = stat_obj
+  else if (is_list(stat_obj) && is_xy_density(stat_obj$density))
+    dens_obj = stat_obj$density
+  else if (is_list(stat_obj) && is.function(stat_obj$density))
+    dens_obj = stat_obj$density
+  else
+    stop()
+
+  stopifnot(exprs = {
+    is_xy_density(dens_obj) || is.function(dens_obj)
+  })
+
+  if (is.function(dens_obj)) {
+    stopifnot(exprs = {
+      length(formals(dens_obj)) > 0L
+    })
+  }
+  else if (is_xy_density(dens_obj)) {
+    stopifnot(exprs = {
+      vek::is_num_vec_xyz(dens_obj$x)
+      # TODO check for no more than 2 repetitions
+      !is.unsorted(dens_obj$x, na.rm = FALSE, strictly = FALSE)
+      vek::is_num_vec_xyz(dens_obj$y)
+      length(dens_obj$x) == length(dens_obj$y)
+      length(dens_obj$x) > 1L
+    })
+  } else {
+    stop()
+  }
+
+  if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
+    stopifnot(is_valid_lim(xlim))
   } else {
     if (is.function(dens_obj))
       xlim = range(samples, na.rm = TRUE)
-    else
+    else if (is_xy_density(dens_obj))
       xlim = range(dens_obj$x, na.rm = TRUE)
+    else
+      stop()
   }
 
   if (is.null(at))
-    x = seq.default(xlim[1L], xlim[2L], length.out = 501L) # TODO case is.null(xlim)
+    x = seq.default(xlim[1L], xlim[2L], length.out = 501L)
   else
     x = at
 
   if (is.function(dens_obj)) {
-    y = dens_obj(x)
+    y_obj = pcj_safely(dens_obj(x)) # TODO check conditions
+    y = y_obj$result
+    stopifnot(exprs = {
+      vek::is_num_vec_xyz(y)
+    })
+
     xy = list(x = x, y = y)
-  } else { # TODO else if check
-    xy = dens_obj[c("x", "y")] # TODO
+  } else if (is_xy_density(dens_obj)) {
+    xy = dens_obj[c("x", "y")]
 
     fill_zero_left = attr(dens_obj, "is_left_tail_zero", TRUE) %||% FALSE
     fill_zero_right = attr(dens_obj, "is_right_tail_zero", TRUE) %||% FALSE
@@ -830,6 +942,8 @@ plot_posterior_ = function(
     #if (dots$type %||% "" == "h") {
     #  xy = stats::approx(xy$x, xy$y, xout = x, method = "linear")
     #}
+  } else {
+    stop()
   }
 
   xlab = get_var_lab(var_name)
@@ -901,7 +1015,7 @@ plot_area = function(
     ...,
     x = NULL,
     distribution,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
@@ -1037,7 +1151,7 @@ plot_prior_area = function(
     transform = list()
   )
 {
-  plot_area(object, ..., distribution = "prior", x = x, stat = gaussian_density, transform = transform)
+  plot_area(object, ..., distribution = "prior", x = x, stat = NULL, transform = transform)
 }
 
 
@@ -1045,7 +1159,7 @@ plot_posterior_area = function(
     object,
     ...,
     x = NULL,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
@@ -1057,7 +1171,7 @@ plot_prior_predictive_area = function(
     object,
     ...,
     x = NULL,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
@@ -1073,7 +1187,7 @@ plot_sequential = function(
     show_prior = TRUE,
     position = "stack",
     order = -1L,
-    stat = gaussian_density,
+    stat = NULL,
     transform = list()
   )
 {
@@ -1437,21 +1551,15 @@ plot.pcj_plot_object_list = function(object) {
       plot(obj)
     }
   } else if (graphics_driver == "ggplot2") {
-    ggobj = NULL
-    for (obj in object) {
-      obj = preprocess_pcj_plot_object(obj)
-      ggobj_ = pcj_plot_object_to_ggplot2(obj)
-      if (is.null(ggobj))
-        ggobj = ggobj_
-      else
-        ggobj = gg_add(ggobj, ggobj_) #ggplot2::ggplot_add(ggobj, ggobj_, "")
-    }
-
+    ggobj = gg_build(object)
     plot(ggobj)
   } else {
     stop()
   }
 }
+
+
+
 
 
 #' @export
@@ -1765,3 +1873,26 @@ pcj_plot_object_axis_lim_raw = function(object, side, lim) {
   }
 }
 
+
+# TODO list_get also exists
+list_get2 = function(x, key, default = NULL) {
+  stopifnot(exprs = {
+    is_list(x)
+    vek::is_chr_vec_xb1(key)
+  })
+
+  if (key %in% names(x))
+    return(x$key)
+  else
+    return(default)
+}
+
+
+is_valid_lim = function(x) {
+  vek::is_num_vec_xyz(x) && length(x) == 2L
+}
+
+
+is_xy_density = function(x) {
+  is_list(x) && all(c("x", "y") %in% names(x), na.rm = FALSE)
+}

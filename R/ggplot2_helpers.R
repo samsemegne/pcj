@@ -46,6 +46,59 @@ gg_add = function(parent, element) {
 }
 
 
+gg_build = function(object) {
+  stopifnot(exprs = {
+    is.pcj_plot_object_list(object) || is.pcj_plot_object(object)
+  })
+
+  if (is.pcj_plot_object(object)) {
+    obj = preprocess_pcj_plot_object(object)
+    return(pcj_plot_object_to_ggplot2(obj))
+  }
+  else if (is.pcj_plot_object_list(object)) {
+    ggobj = NULL
+    for (obj in object) {
+      obj = preprocess_pcj_plot_object(obj)
+      ggobj_ = pcj_plot_object_to_ggplot2(obj)
+      if (is.null(ggobj))
+        ggobj = ggobj_
+      else
+        ggobj = gg_add(ggobj, ggobj_)
+    }
+
+    return(ggobj)
+  } else {
+    stop()
+  }
+}
+
+
+# TODO check if plot.default
+#' @export
+ggplot_add.pcj_plot_object_list = function(object, plot, object_name) {
+  stopifnot(exprs = {
+    is.pcj_plot_object_list(object)
+    inherits(plot, "ggplot", which = FALSE)
+  })
+
+  ggobj = gg_build(object)
+  return(plot + ggobj)
+}
+
+
+# TODO check if plot.default
+#' @export
+ggplot_add.pcj_plot_object = function(object, plot, object_name) {
+  stopifnot(exprs = {
+    is.pcj_plot_object(object)
+    inherits(plot, "ggplot", which = FALSE)
+  })
+
+  ggobj = gg_build(object)
+  return(plot + ggobj)
+}
+
+
 get_aes_name_map = function() {
   return(c(
     col = "colour",
