@@ -3,7 +3,7 @@
 is.pcj_model1 = function(x) is_of_mono_class(x, "pcj_model1")
 
 
-rjags_estimate = function(
+new_pcj_model1 = function(
     data,
     pci_params,
     prior_mu,
@@ -235,7 +235,101 @@ store_prior = function(x) {
   if (is.pcj_jags_dist(x))
     return(pcj_jags_dist_to_jags(x))
   else if (is_pcj_point_prior(x))
-    return(x) # Point prior
+    return(x)
   else
     stop()
 }
+
+
+##' @export
+#seq.pcj_model1 = function(
+#    object,
+#    at = NULL,
+#    from = NULL,
+#    to = NULL,
+#    n = NULL,
+#    by = NULL,
+#    x = NULL,
+#    stat = NULL
+#  )
+#{
+#  stopifnot(exprs = {
+#    is.pcj_model1(object)
+#    # TODO check at
+#    is.null(from) || vek::is_num_vec_xyz1(from) || vek::is_chr_vec_xb1(from)
+#    is.null(to) || vek::is_num_vec_xyz1(to) || vek::is_chr_vec_xb1(to)
+#    is.null(n) || vek::is_int_vec_x1(n)
+#    is.null(by) || vek::is_num_vec_xyz1(by)
+#    vek::is_chr_vec_xb1(x) # Allow NULL when "[]" indexing is implemented
+#    # TODO check stat
+#  })
+#
+#  if (!is.null(from) || !is.null(to)) {
+#    stopifnot(xor(is.null(by), is.null(n)))
+#
+#    if (!is.null(n))
+#      stopifnot(n > 1L)
+#    if (!is.null(by))
+#      stopifnot(by > 0L)
+#  }
+#
+#
+#  samples = get_sample.pcj_model1(object, x, "all")
+#
+#  from_val = NULL
+#  if (!is.null(from)) {
+#    if (vek::is_num_vec_xyz1(from))
+#      from_val = from
+#    else if (vek::is_chr_vec_xb1(from))
+#      from_val = get_at(from, samples, stat)
+#    else
+#      stop()
+#
+#    stopifnot(vek::is_num_vec_xyz1(to_val))
+#  }
+#
+#  to_val = NULL
+#  if (!is.null(to)) {
+#    if (vek::is_num_vec_xyz1(to))
+#      to_val = to
+#    else if (vek::is_chr_vec_xb1(to))
+#      to_val = get_at(to, samples, stat)
+#    else
+#      stop()
+#
+#    stopifnot(vek::is_num_vec_xyz1(to_val))
+#  }
+#
+#  from_to_values =
+#  if (!is.null(to_val) && !is.null(to_val)) {
+#
+#  }
+#}
+#
+
+## TODO
+##' @export
+#mean.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {
+#  stopifnot(exprs = {
+#    is.pcj_model1(object)
+#  })
+#}
+
+
+## TODO
+##' @export
+#median.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {
+#  stopifnot(exprs = {
+#    is.pcj_model1(object)
+#  })
+#}
+
+
+## TODO
+##' @export
+#quantile.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {
+#  stopifnot(exprs = {
+#    is.pcj_model1(object)
+#  })
+#}
+

@@ -20,14 +20,14 @@ plot_prior = function(
     x %in% c("mu", "sigma")
   })
 
-  graphics = "lines.default"
+  graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       graphics = ...elt(1L)
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines.default", "area", "arrows")
+    graphics %in% c("lines", "points", "area", "arrows")
   })
 
   prior_key = sprintf("%s%s", "prior_", x)
@@ -41,7 +41,7 @@ plot_prior = function(
   if (is_pcj_point_prior(prior_obj)) {
     return(plot_point_prior(object, ..., x = x, transform = transform))
   }
-  else if (graphics == "lines.default") {
+  else if (graphics %in% c("lines", "points")) {
     return(plot_prior_(object, ..., x = x, transform = transform))
   }
   else if (graphics == "area") {
@@ -63,17 +63,17 @@ plot_prior_predictive = function(
     transform = list()
   )
 {
-  graphics = "lines.default"
+  graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       graphics = ...elt(1L)
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines.default", "area")
+    graphics %in% c("lines", "area", "points")
   })
 
-  if (graphics == "lines.default") {
+  if (graphics %in% c("lines", "points")) {
     ##browser()
     dots = list(...)
     do.call(plot_prior_predictive_, c(list(object), dots, list(x = x, stat = stat, transform = transform)))
@@ -108,14 +108,14 @@ plot_posterior = function(
     is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
   })
 
-  graphics = "lines.default"
+  graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       graphics = ...elt(1L)
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines.default", "area")
+    graphics %in% c("lines", "points", "area")
   })
 
   prior_key = sprintf("%s%s", "prior_", x)
@@ -132,11 +132,13 @@ plot_posterior = function(
 
     return(plot_point_prior(object, ..., x = x, stat = stat, transform = transform))
   }
-  else if (graphics == "lines.default") {
+  else if (graphics %in% c("lines", "points")) {
     return(plot_posterior_(object, ..., x = x, stat = stat, transform = transform))
   }
   else if (graphics == "area") {
-    return(plot_posterior_area(object, ..., x = x, stat = stat, transform = transform))
+    dots = list(...)[-1L]
+    return(do.call(plot_posterior_area, c(list(object), dots, list(x = x, stat = stat, transform = transform))))
+    #return(plot_posterior_area(object, ..., x = x, stat = stat, transform = transform))
   } else {
     stop()
   }
@@ -157,14 +159,14 @@ plot_point_prior = function(
     x %in% c("mu", "sigma")
   })
 
-  graphics = "lines.default"
+  graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       graphics = ...elt(1L)
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines.default", "arrows")
+    graphics %in% c("lines", "arrows")
   })
 
   dots = list(...)
@@ -186,11 +188,6 @@ plot_point_prior = function(
   rm(x)
   var_info = get_var_info()
 
-  #class = dots$class %||% list()
-  #class = c(class, list("prior"))
-  #if ("class" %in% names(dots))
-  #  dots$class = NULL
-
   prior_key = sprintf("prior_%s", var_name)
   prior_obj = object$prior_study$result[[prior_key]]
 
@@ -200,11 +197,21 @@ plot_point_prior = function(
   #legend = xlab
   ylim = c(0L, 1L)
 
-  if (graphics == "lines.default") {
+  if (graphics == "lines") {
+    if ("type" %in% names(dots)) {
+      stopifnot(exprs = {
+        vek::is_chr_vec_xb1(dots$type)
+        dots$type %in% c("l", "h")
+      })
+
+      dots$type = NULL
+    }
+
     xy = list(x = c(prior_obj, prior_obj), y = c(0L, 1L))
     data = xy |> c(list(x_ = var_name, transform = transform, add = add))
 
-    args = dots |>
+    args = list(type = "l") |>
+      smth(dots) |>
       smth(use_if_no_theme(
         type = "l",
         lend = "butt"
@@ -216,19 +223,6 @@ plot_point_prior = function(
         data = data
       )) |>
       keep(get_supported_lines_params())
-
-    if (!("type" %in% names(args)))
-      args$type = "l"
-
-    stopifnot(vek::is_chr_vec_xb1(args$type))
-
-    if (!(args$type %in% c("l", "h")))
-      stop(paste0("When using 'lines.default' to plot a point prior, ",
-                  "'type' must be 'l' or 'h'", collapse = "",
-                  recycle0 = FALSE))
-
-    if (args$type == "h")
-      args$type = "l"
 
     data = named_list_rm(data, c("x", "y"))
     args = c(xy, args)
@@ -302,14 +296,14 @@ plot_prior_ = function(
     x %in% c("mu", "sigma")
   })
 
-  graphics = "lines.default"
+  graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       graphics = ...elt(1L)
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines.default")
+    graphics %in% c("lines", "points")
   })
 
   dots = list(...)
@@ -324,7 +318,12 @@ plot_prior_ = function(
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
 
-  at = list_get2(dots, "at")
+  at = NULL
+  if ("at" %in% names(dots)) {
+    at = dots$at
+    dots$at = NULL
+  }
+
   if (!is.null(at)) {
     stopifnot(exprs = {
       vek::is_num_vec_xyz(at)
@@ -341,11 +340,6 @@ plot_prior_ = function(
   }
 
   stopifnot(vek::is_lgl_vec_x1(add))
-
-  #class = dots$class %||% list()
-  #class = c(class, list("prior"))
-  #if ("class" %in% names(dots))
-  #  dots$class = NULL
 
   # Get the prior.
   prior_key = sprintf("prior_%s", var_name)
@@ -365,6 +359,24 @@ plot_prior_ = function(
   else
     x = at
 
+  type = switch(graphics, "lines" = "l", "points" = "p", stop())
+  if ("type" %in% names(dots)) {
+    type = dots$type
+    dots$type = NULL
+  }
+
+  stopifnot(vek::is_chr_vec_xb1(type))
+  if (graphics == "lines") {
+    stopifnot(type %in% c("l", "h"))
+    if (type == "h")
+      stop('Setting "type" to "h" is currently not supported')
+  }
+  else if (graphics == "points")
+    stopifnot(type == "p")
+  else
+    stop()
+
+
   # Calculate the densities.
   y = pcj_jags_dist_pdf(prior_obj, x)
 
@@ -377,7 +389,7 @@ plot_prior_ = function(
   }
 
   # Insert truncation points.
-  if (!is.null(prior_obj$truncation)) {
+  if (!is.null(prior_obj$truncation) && graphics == "lines") {
     trunc_a = prior_obj$truncation[[1L]]
     trunc_b = prior_obj$truncation[[2L]]
     min_x = min(x, na.rm = TRUE)
@@ -402,34 +414,33 @@ plot_prior_ = function(
   ylim = range(y, na.rm = TRUE)
   data = list(x = x, y = y, x_ = var_name, transform = transform, add = add)
 
-  args = dots |>
+  args = list(type = type) |>
+    smth(dots) |>
     smth(get_theme_args(
       func_name = graphics,
       func_namespace = "graphics",
       #class = class,
       data = data
-    )) |>
-    keep(get_supported_lines_params())
+    ))
 
-  # TODO
-  if (args$type %||% "" == "h")
-    stop("Argument 'h' for parameter 'type' is currently not supported")
+  if (graphics == "lines")
+    args = args |> keep(get_supported_lines_params())
+  else if (graphics == "points")
+    args = args |> keep(get_supported_points_params())
+  else
+    stop()
 
   data = named_list_rm(data, c("x", "y"))
-  #if ("xlab" %in% names(args)) {
-  #  data$legend = args$xlab
-  #  args$xlab = NULL
-  #} else {
-  #  data$legend = legend
-  #}
-
   args = c(list(x = x, y = y), args)
-  lines_obj = new_pcj_plot_object("lines.default", args, data)
+  func = switch(
+    graphics, "lines" = "lines.default", "points" = "points.default", stop())
+
+  graphics_obj = new_pcj_plot_object(func, args, data)
 
   if (add) {
-    return(lines_obj)
+    return(graphics_obj)
   } else {
-    data = list(x = NULL, y = NULL, content = list(lines_obj))
+    data = list(x = NULL, y = NULL, content = list(graphics_obj))
 
     args = list(type = "n") |>
       smth(dots) |>
@@ -452,7 +463,7 @@ plot_prior_ = function(
     args = c(list(x = NULL, y = NULL), args)
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
 
-    plot_obj = list(plot_default_obj, lines_obj)
+    plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
     return(plot_obj)
   }
@@ -475,14 +486,14 @@ plot_prior_predictive_ = function(
     # TODO check x %in% c(...)
   })
 
-  graphics = "lines.default"
+  graphics = "lines"
   #if (...length() > 0L)
   #  if (dots_names(...)[1L] == "")
   #    graphics = ...elt(1L)
   #
   #stopifnot(exprs = {
   #  vek::is_chr_vec_xb1(graphics)
-  #  graphics %in% c("lines.default")
+  #  graphics %in% c("lines")
   #})
 
   if (is.null(stat)) {
@@ -495,8 +506,17 @@ plot_prior_predictive_ = function(
     })
   }
 
+  graphics = "lines"
+  if (...length() > 0L)
+    if (dots_names(...)[1L] == "")
+      graphics = ...elt(1L)
+
+  stopifnot(exprs = {
+    vek::is_chr_vec_xb1(graphics)
+    graphics %in% c("lines", "points")
+  })
+
   dots = list(...)
-  #browser()
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       dots = dots[-1L]
@@ -504,20 +524,12 @@ plot_prior_predictive_ = function(
   #browser()
   stopifnot(is_uniquely_named_list(dots))
 
-  at = NULL
-  if ("at" %in% names(dots))
-    at = dots$at
+  var_name = x
+  rm(x)
+  var_info = get_var_info()
+  var_bounds = get_var_bounds(var_name, var_info)
 
-  stopifnot({
-    vek::is_num_vec_xyz(at) || is.null(at)
-  })
-
-  if (!is.null(at)) {
-    stopifnot(exprs = {
-      length(at) > 1L
-      !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
-    })
-  }
+  samples = get_sample.pcj_prior_predictive1(object$prior_study, var_name)
 
   add = FALSE
   if ("add" %in% names(dots)) {
@@ -527,17 +539,6 @@ plot_prior_predictive_ = function(
 
   stopifnot(vek::is_lgl_vec_x1(add))
 
-  var_name = x
-  rm(x)
-  var_info = get_var_info()
-  var_bounds = get_var_bounds(var_name, var_info)
-
-  #class = dots$class %||% list()
-  #class = c(class, list("prior_predictive"))
-  #if ("class" %in% names(dots))
-  #  dots$class = NULL
-
-  samples = get_sample.pcj_prior_predictive1(object$prior_study, var_name)
   stat_args = list(samples)
   if ("..." %in% names(formals(stat))) {
     # Provide metadata about the variable.
@@ -592,6 +593,48 @@ plot_prior_predictive_ = function(
     stop()
   }
 
+  at = NULL
+  if ("at" %in% names(dots)) {
+    at = dots$at
+    dots$at = NULL
+  }
+
+  at = get_at(at, samples, stat)
+  stopifnot({
+    vek::is_num_vec_xyz(at) || is.null(at)
+  })
+
+  if (!is.null(at)) {
+    if (graphics == "lines")
+      stopifnot(length(at) > 1L)
+    else if (graphics == "points")
+      stopifnot(length(at) > 0L)
+    else
+      stop()
+
+    # Store the original order of "at", so other vectorized arguments may be
+    # re-ordered in the new order.
+    at_order = order(at, na.last = TRUE, decreasing = FALSE, method = "auto")
+
+    at = at[at_order]
+    stopifnot(exprs = {
+      !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
+    })
+
+
+    # TODO
+    #is_col_vec = \(k) {
+    #  vek::is_num_vec(k) || vek::is_chr_vec(k) || vek::is_lgl_vec(k)
+    #}
+    #
+    #if (graphics == "points" && "col" %in% names(dots)
+    #    && is_col_vec(dots$col))
+    #{
+    #
+    #}
+    #rm(is_col_vec)
+  }
+
   xlim = NULL
   if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
@@ -607,8 +650,25 @@ plot_prior_predictive_ = function(
   else
     x = at
 
+  type = switch(graphics, "lines" = "l", "points" = "p", stop())
+  if ("type" %in% names(dots)) {
+    type = dots$type
+    dots$type = NULL
+  }
+
+  stopifnot(vek::is_chr_vec_xb1(type))
+  if (graphics == "lines")
+    stopifnot(type %in% c("l", "h"))
+  else if (graphics == "points")
+    stopifnot(type == "p")
+  else
+    stop()
+
+  if (type == "h")
+    stop('Setting "type" to "h" is currently not supported')
+
   if (is.function(dens_obj)) {
-    y = dens_obj(x)
+    y = dens_obj(x) # TODO safely()
     xy = list(x = x, y = y)
   } else { # TODO else if check
     xy = dens_obj[c("x", "y")] # TODO
@@ -653,10 +713,10 @@ plot_prior_predictive_ = function(
       }
     }
 
-    # TODO, if type == "h", then use approxfun on 'xy' for each 'x'
-    #if (dots$type %||% "" == "h") {
-    #  xy = stats::approx(xy$x, xy$y, xout = x, method = "linear")
-    #}
+    # TODO error when length(x) == 1
+    if (graphics == "points") {
+      xy = stats::approx(xy$x, xy$y, xout = x, method = "linear")
+    }
   }
 
   xlab = get_var_lab(var_name)
@@ -671,28 +731,30 @@ plot_prior_predictive_ = function(
       func_namespace = "graphics",
       #class = class,
       data = data
-    )) |>
-    keep(get_supported_lines_params())
+    ))
 
-  # TODO
-  if (args$type %||% "" == "h")
-    stop("Argument 'h' for parameter 'type' is currently not supported")
+  if (graphics == "lines")
+    args = args |> keep(get_supported_lines_params())
+  else if (graphics == "points")
+    args = args |> keep(get_supported_points_params())
+  else
+    stop()
 
   data = named_list_rm(data, c("x", "y"))
-  #if ("xlab" %in% names(args)) {
-  #  data$legend = args$xlab
-  #  args$xlab = NULL
-  #} else {
-  #  data$legend = xlab
-  #}
-
   args = c(xy, args)
-  lines_obj = new_pcj_plot_object("lines.default", args, data)
+  func = switch(
+    graphics,
+    "lines" = "lines.default",
+    "points" = "points.default",
+    stop()
+  )
+
+  graphics_obj = new_pcj_plot_object(func, args, data)
 
   if (add) {
-    return(lines_obj)
+    return(graphics_obj)
   } else {
-    data = list(x = NULL, y = NULL, content = list(lines_obj))
+    data = list(x = NULL, y = NULL, content = list(graphics_obj))
 
     args = list(type = "n") |>
       smth(dots) |>
@@ -714,7 +776,7 @@ plot_prior_predictive_ = function(
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
-    plot_obj = list(plot_default_obj, lines_obj)
+    plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
     return(plot_obj)
   }
@@ -747,37 +809,20 @@ plot_posterior_ = function(
     })
   }
 
-  graphics = "lines.default"
+  graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       graphics = ...elt(1L)
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines.default")
+    graphics %in% c("lines", "points")
   })
 
   dots = list(...)
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
       dots = dots[-1L]
-
-  at = NULL
-  if ("at" %in% names(dots)) {
-    at = dots$at
-    dots$at = NULL
-  }
-
-  stopifnot({
-    vek::is_num_vec_xyz(at) || is.null(at)
-  })
-
-  if (!is.null(at)) {
-    stopifnot(exprs = {
-      length(at) > 1L
-      !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
-    })
-  }
 
   add = FALSE
   if ("add" %in% names(dots)) {
@@ -791,11 +836,6 @@ plot_posterior_ = function(
   rm(x)
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
-
-  #class = dots$class %||% list()
-  #class = c(class, list("posterior"))
-  #if ("class" %in% names(dots))
-  #  dots$class = NULL
 
   if (is.pcj_model1(object)) {
     samples = get_sample.pcj_model1(object, var_name, "all")
@@ -814,6 +854,35 @@ plot_posterior_ = function(
   }
   else {
     stop()
+  }
+
+  at = NULL
+  if ("at" %in% names(dots)) {
+    at = dots$at
+    dots$at = NULL
+  }
+
+  at = get_at(at, samples, stat)
+  stopifnot({
+    vek::is_num_vec_xyz(at) || is.null(at)
+  })
+
+  if (!is.null(at)) {
+    if (graphics == "lines")
+      stopifnot(length(at) > 1L)
+    else if (graphics == "points")
+      stopifnot(length(at) > 0L)
+    else
+      stop()
+
+    # Store the original order of "at", so other vectorized arguments may be
+    # re-ordered in the new order.
+    at_order = order(at, na.last = TRUE, decreasing = FALSE, method = "auto")
+
+    at = at[at_order]
+    stopifnot(exprs = {
+      !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
+    })
   }
 
   stat_args = list(samples)
@@ -887,6 +956,23 @@ plot_posterior_ = function(
   else
     x = at
 
+  type = switch(graphics, "lines" = "l", "points" = "p", stop())
+  if ("type" %in% names(dots)) {
+    type = dots$type
+    dots$type = NULL
+  }
+
+  stopifnot(vek::is_chr_vec_xb1(type))
+  if (graphics == "lines")
+    stopifnot(type %in% c("l", "h"))
+  else if (graphics == "points")
+    stopifnot(type == "p")
+  else
+    stop()
+
+  if (type == "h")
+    stop('Setting "type" to "h" is currently not supported')
+
   if (is.function(dens_obj)) {
     y_obj = pcj_safely(dens_obj(x)) # TODO check conditions
     y = y_obj$result
@@ -939,13 +1025,14 @@ plot_posterior_ = function(
       }
     }
 
-    #if (dots$type %||% "" == "h") {
-    #  xy = stats::approx(xy$x, xy$y, xout = x, method = "linear")
-    #}
+    if (graphics == "points") {
+      xy = stats::approx(xy$x, xy$y, xout = x, method = "linear")
+    }
   } else {
     stop()
   }
 
+  # TODO determining xlim when graphics == points
   xlab = get_var_lab(var_name)
   legend = xlab
   ylab = "Density"
@@ -958,12 +1045,14 @@ plot_posterior_ = function(
       func_namespace = "graphics",
       #class = class,
       data = data
-    )) |>
-    keep(get_supported_lines_params())
+    ))
 
-  # TODO
-  if (args$type %||% "" == "h")
-    stop("Argument 'type = h' is currently not supported")
+  if (graphics == "lines")
+    args = args |> keep(get_supported_lines_params())
+  else if (graphics == "points")
+    args = args |> keep(get_supported_points_params())
+  else
+    stop()
 
   data = named_list_rm(data, c("x", "y"))
   #if ("xlab" %in% names(args)) {
@@ -974,12 +1063,19 @@ plot_posterior_ = function(
   #}
 
   args = c(xy, args)
-  lines_obj = new_pcj_plot_object("lines.default", args, data)
+  func = switch(
+    graphics,
+    "lines" = "lines.default",
+    "points" = "points.default",
+    stop()
+  )
+
+  graphics_obj = new_pcj_plot_object(func, args, data)
 
   if (add) {
-    return(lines_obj)
+    return(graphics_obj)
   } else {
-    data = list(x = NULL, y = NULL, content = list(lines_obj))
+    data = list(x = NULL, y = NULL, content = list(graphics_obj))
 
     args = list(type = "n") |>
       smth(dots) |>
@@ -1001,11 +1097,9 @@ plot_posterior_ = function(
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
-    plot_obj = list(plot_default_obj, lines_obj)
+    plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
     return(plot_obj)
-
-
   }
 }
 
@@ -1021,14 +1115,16 @@ plot_area = function(
 {
 
   dots = list(...)
+  #stopifnot(is_uniquely_named_list(dots))
 
-  at = NULL
-  if ("at" %in% names(dots)) {
-    at = dots$at
-    stopifnot({
-      vek::is_num_vec_xyz(at) || is.null(at)
-    })
-  }
+  # TODO at logic
+  #at = NULL
+  #if ("at" %in% names(dots)) {
+  #  at = dots$at
+  #  stopifnot({
+  #    vek::is_num_vec_xyz(at) || is.null(at)
+  #  })
+  #}
 
   add = FALSE
   if ("add" %in% names(dots)) {
@@ -1040,15 +1136,10 @@ plot_area = function(
   var_name = x
   rm(x)
 
-  #class = dots$class %||% list()
-  #class = c(class, list(c("prior", "area")))
-  #if ("class" %in% names(dots))
-  #  dots$class = NULL
-
   # TODO densitiy_func ommit when distr is prior
-  args = list(object = object, add = TRUE) |>
+  args = list(object = object) |>
     c(dots) |>
-    c(list(x = var_name, stat = stat, transform = list()))
+    c(list(add = TRUE, x = var_name, stat = stat, transform = list()))
 
   func = switch(
     distribution,
@@ -1195,7 +1286,7 @@ plot_sequential = function(
     is.pcj_process_capability_jags1(object)
     vek::is_chr_vec_xb1(x)
     #vek::is_num_vec_xyz(at) || is.null(at)
-    is.function(stat)
+    #is.function(stat) # TODO
     vek::is_int_vec_x1(order)
     order %in% c(-1L, 1L)
     # TODO transform
@@ -1224,11 +1315,6 @@ plot_sequential = function(
                   "plotting variables with point priors"))
   }
 
-  #class = dots$class %||% list()
-  #class = c(class, list("sequential"))
-  #if ("class" %in% names(dots))
-  #  dots$class = NULL
-
   # 1. -------------------------------------------------------------------------
 
   # Create the individual plots to obtain information about their heights.
@@ -1242,7 +1328,7 @@ plot_sequential = function(
     } else {
       # Create prior predictive plot.
       args = c(list(
-        object, "lines.default", add = TRUE, x = var_name, stat = stat,
+        object, "lines", add = TRUE, x = var_name, stat = stat,
         transform = list()
         #class = class
       ), dots)
@@ -1536,6 +1622,9 @@ get_graphics_driver = function() {
     graphics_driver %in% c("graphics", "ggplot2")
   })
 
+  if (graphics_driver == "ggplot2")
+    requireNamespace("ggplot2", quietly = FALSE)
+
   return(graphics_driver)
 }
 
@@ -1764,6 +1853,11 @@ get_supported_lines_params = function() {
 }
 
 
+get_supported_points_params = function() {
+  c("pch", "col", "bg", "lty", "lwd", "lend")
+}
+
+
 get_supported_arrows_params = function() {
   c("lty", "lwd", "col", "lend")
 }
@@ -1896,3 +1990,151 @@ is_valid_lim = function(x) {
 is_xy_density = function(x) {
   is_list(x) && all(c("x", "y") %in% names(x), na.rm = FALSE)
 }
+
+
+# TODO add mean.default and median.default parsing
+get_at = function(at, samples, stat) {
+  stopifnot(exprs = {
+    vek::is_num_vec_xyz(samples)
+    # TODO check stat
+    is.null(at) || vek::is_num_vec_xyz(at) || is.function(at) ||
+      vek::is_chr_vec_xb(at)
+  })
+
+  if (is.null(at)) {
+    return(at)
+  }
+  else if (vek::is_num_vec_xyz(at)) {
+    return(at)
+  }
+  else if (is.function(at)) {
+    stopifnot(exprs = {
+      length(formals(at)) > 0L
+    })
+
+    at_obj = pcj_safely(at(samples))
+    at = at$result
+    return(at)
+  } else if (vek::is_chr_vec_xb(at)) {
+    if (length(at) == 0L)
+      return(numeric(0L))
+
+    is_q = startsWith(at, "q")
+    is_mode = at %in% c("mean", "median")
+    q_str = at[is_q]
+    other_str = at[is_mode]
+    lit_str = at[!(is_q | is_mode)]
+    rm(is_q, is_mode)
+
+    stopifnot(exprs = {
+      is_all_unique(at)
+      # TODO don't allow case both "q.5" and "median" %in% at
+    })
+
+    lit = numeric(0L)
+    if (length(lit_str) > 0L) {
+      lit = suppressWarnings(as.numeric(lit_str))
+      stopifnot(exprs = {
+        vek::is_num_vec_xyz(lit)
+        # TODO check for unique? else indexing at end may fail?
+      })
+
+      names(lit) = lit_str
+    }
+
+    q = numeric(0L)
+    if (length(q_str) > 0L) {
+      q_val = sub(".", "", q_str)
+      q_val = suppressWarnings(as.numeric(q_val))
+      stopifnot(exprs = {
+        vek::is_num_vec_xyz(q_val)
+        all(q_val >= 0L, na.rm = FALSE)
+        all(q_val <= 1L, na.rm = FALSE)
+      })
+
+      q_obj = NULL
+      if (is_list(stat) && "quantile" %in% names(stat) &&
+          is.function(stat$quantile))
+      {
+        stopifnot(length(formals(stat$quantile)) > 1L)
+        q_obj = pcj_safely(stat$quantile(samples, q_val))
+        q = q_obj$result # TODO check conditions
+
+      } else {
+        q_obj = pcj_safely(stats::quantile(samples, q_val))
+        q = q_obj$result # TODO check conditions
+      }
+
+      r1 = rank(q, TRUE, "average")
+      r2 = rank(q_val, TRUE, "average")
+      names(r1) = NULL
+      names(r2) = NULL
+      stopifnot(exprs = {
+        vek::is_num_vec_xyz(q)
+        length(q) == length(q_val)
+        identical(r1, r2)
+        all(q != q_val, na.rm = FALSE)
+      })
+      rm(r1, r2)
+
+      names(q_obj$result) = q_str
+      names(q) = q_str
+    }
+
+    modes = numeric(0L)
+    if (length(other_str) > 0L) {
+      stopifnot(exprs = {
+        all(other_str %in% c("mean", "median"), na.rm = FALSE) # TODO "mode"
+      })
+
+      get_default_f = \(k) {
+        switch(
+          k,
+          "mean" = \(x) mean(x, na.rm = FALSE),
+          "median" = \(x) stats::median.default(x, na.rm = FALSE),
+          stop()
+        )
+      }
+
+      mode_objects = lapply(other_str, \(m) {
+        if (is_list(stat) && m %in% names(stat)) {
+          if (is.function(stat[[m]])) {
+            f = stat[[m]]
+            stopifnot(length(formals(f)) > 0L)
+            m_obj = pcj_safely(f(samples))
+            return(m_obj)
+          } else if (vek::is_num_vec_xyz1(stat[[m]])) {
+            return(stat[[m]])
+          } else {
+            stop()
+          }
+        } else {
+          f = get_default_f(m)
+          m_obj = pcj_safely(f(samples))
+          return(m_obj)
+        }
+      }) # list of pcj_safely() objects
+
+      names(mode_objects) = mode_objects
+      modes = sapply(mode_objects, \(k) {
+        if (is_pcj_safely_obj(k))
+          return(k$result)
+        else if (vek::is_num_vec_xyz(k))
+          return(k)
+        else
+          stop()
+      }, simplify = TRUE, USE.NAMES = FALSE)
+
+      names(modes) = other_str
+    }
+
+    values = c(lit, q, modes)
+    # Put the values in the order of "at".
+    values = values[at]
+    return(values)
+  } else {
+    stop()
+  }
+}
+
+

@@ -34,7 +34,7 @@ sequential_analysis = function(
   for (i in 1:length(at)) {
     n = at[i]
     dat = utils::head(data, n)
-    obj = rjags_estimate(
+    obj = new_pcj_model1(
       dat,
       pci_params,
       prior_mu,

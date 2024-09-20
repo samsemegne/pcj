@@ -1,19 +1,8 @@
----
-title: "demo"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{demo}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-```{r setup}
+## ----setup--------------------------------------------------------------------
 library(pcj)
 library(pci)
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 set.seed(1L)
 data = stats::rnorm(30L)
 
@@ -26,18 +15,13 @@ model = pcj::estimate_capability(
   pcj::new_rjags_params(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill"),
   pcj::new_sequential_params(c(15L, 20L, 25L, 30L))
 )
-```
 
-
-
-```{r}
+## -----------------------------------------------------------------------------
 pci::C_p(stats::sd(data), -3, 3, 6)
 pci::C_pk(mean(data), stats::sd(data), -3, 3, 6)
 pci::C_pm(mean(data), stats::sd(data), 0, -3, 3, 6)
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 options(pcj.graphics_driver = "graphics")
 
 pcj::plot_prior(model, x = "mu")
@@ -49,16 +33,11 @@ options(pcj.graphics_driver = "ggplot2")
 pcj::plot_posterior(model, x = "mu")
 pcj::plot_posterior(model, x = "sigma")
 pcj::plot_posterior(model, x = "C_pk") 
-```
 
-
-
-
-```{r fig.width=5, fig.height=5}
+## ----fig.width=5, fig.height=5------------------------------------------------
 pcj::plot_sequential(model, x = "C_pk", position = "ridges")
-```
 
-```{r fig.width=5, fig.height=5}
+## ----fig.width=5, fig.height=5------------------------------------------------
 polspline_density = \(x, ...) {
     fit = polspline::logspline(x)
     return(\(k, ...) polspline::dlogspline(k, fit))
@@ -67,10 +46,8 @@ polspline_density = \(x, ...) {
 options(pcj.graphics_driver = "graphics")
 
 pcj::plot_sequential(model, x = "C_pk", position = "ridges", stat = polspline_density)
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 model = pcj::estimate_capability(
   data,
   pcj::new_pci_params(c("C_p"), 0, -3, 3, 6),
@@ -80,9 +57,8 @@ model = pcj::estimate_capability(
   pcj::new_rjags_params(500L, 2000L, 1L, 4L, 123L, "base::Wichmann-Hill"),
   pcj::new_sequential_params(c(15L, 20L, 25L, 30L))
 )
-```
 
-```{r}
+## -----------------------------------------------------------------------------
 polspline_stats = \(x, ...) {
     fit = polspline::logspline(x)
     return(list(
@@ -125,10 +101,7 @@ plot(pcj::plot_posterior(model, x = "C_p", stat = normal_stat)) +
   jaspGraphs::themeJaspRaw() +
   jaspGraphs::geom_rangeframe()
 
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 summary(model$sequential_analysis$fit[[4L]])
-```
 

@@ -53,7 +53,7 @@ estimate_capability = function(
   sequential = NULL
   if (is.null(sequential_params)) {
     # Estimate a single model using all data.
-    pcj_model1 = rjags_estimate(
+    pcj_model1 = new_pcj_model1(
       data,
       pci_params,
       prior_mu,

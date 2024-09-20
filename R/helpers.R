@@ -29,6 +29,13 @@ is_list = function(x) {
 }
 
 
+is_pcj_safely_obj = function(x) {
+  is_uniquely_named_list(x) &&
+    all(names(x) %in% c("error", "warnings", "conditions", "outputs", "result"),
+        na.rm = FALSE)
+}
+
+
 is_named_list = function(x) {
   if (!is_list(x))
     return(FALSE)

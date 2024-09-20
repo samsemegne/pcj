@@ -1,4 +1,6 @@
 
+#' @importFrom ggplot2 ggplot_add
+#'
 # col = colour / fill
 # lty = linetype 0:6
 # lwd = linewidth
@@ -248,7 +250,7 @@ arrows_to_ggplot2 = function(object) {
 points_default_to_ggplot2 = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
-  dots = list_get(object$args, c("col", "lty", "lwd", "lend"))
+  dots = list_get(object$args, c("pch", "col", "bg", "lty", "lwd", "lend"))
   points_map = c(
     pch = "shape",
     col = "colour",
@@ -398,3 +400,4 @@ polygon_to_ggplot2 = function(object) {
 list_get = function(x, entries) {
   return(x[names(x) %in% entries])
 }
+
