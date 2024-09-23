@@ -355,7 +355,11 @@ plot_prior_ = function(
   else
     xlim = auto_xlim_pcj_jags_dist(prior_obj)
 
-  check_xlim(xlim)
+  tmp = check_lim(xlim, "x")
+  if (!is.null(tmp))
+    stop(tmp)
+  else
+    rm(tmp)
 
   if ("ylim" %in% names(dots) && !is.null(dots$ylim))
     check_ylim(dots$ylim)
@@ -492,16 +496,6 @@ plot_prior_predictive_ = function(
     # TODO check x %in% c(...)
   })
 
-  graphics = "lines"
-  #if (...length() > 0L)
-  #  if (dots_names(...)[1L] == "")
-  #    graphics = ...elt(1L)
-  #
-  #stopifnot(exprs = {
-  #  vek::is_chr_vec_xb1(graphics)
-  #  graphics %in% c("lines")
-  #})
-
   if (is.null(stat)) {
     stat = gaussian_density
   } else {
@@ -557,21 +551,14 @@ plot_prior_predictive_ = function(
 
   stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
-  stopifnot(exprs = {
-    is.function(stat_obj) || is_list(stat_obj)
-  })
 
-  dens_obj = NULL
-  if (is_xy_density(stat_obj))
-    dens_obj = stat_obj
-  else if (is.function(stat_obj))
-    dens_obj = stat_obj
-  else if (is_list(stat_obj) && is_xy_density(stat_obj$density))
-    dens_obj = stat_obj$density
-  else if (is_list(stat_obj) && is.function(stat_obj$density))
-    dens_obj = stat_obj$density
+  tmp = check_stat_result(stat_obj, "stat")
+  if (!is.null(tmp))
+    stop(tmp)
   else
-    stop()
+    rm(tmp)
+
+  dens_obj = get_stat_density(stat_obj)
 
   stopifnot(exprs = {
     is_xy_density(dens_obj) || is.function(dens_obj)
@@ -647,7 +634,11 @@ plot_prior_predictive_ = function(
       xlim = range(stat_obj$x, na.rm = TRUE)
   }
 
-  check_xlim(xlim)
+  tmp = check_lim(xlim, "x")
+  if (!is.null(tmp))
+    stop(tmp)
+  else
+    rm(tmp)
 
   if ("ylim" %in% names(dots) && !is.null(dots$ylim))
     check_ylim(dots$ylim)
@@ -912,23 +903,14 @@ plot_posterior_ = function(
 
   stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
-  stopifnot(exprs = {
-    is.function(stat_obj) || is_list(stat_obj)
-  })
 
-  dens_obj = NULL
-  if (is_xy_density(stat_obj))
-    dens_obj = stat_obj
-  else if (is.function(stat_obj))
-    dens_obj = stat_obj
-  else if (is_list(stat_obj) && is_xy_density(stat_obj$density))
-    dens_obj = stat_obj$density
-  else if (is_list(stat_obj) && is.function(stat_obj$density))
-    dens_obj = stat_obj$density
+  tmp = check_stat_result(stat_obj, "stat")
+  if (!is.null(tmp))
+    stop(tmp)
   else
-    stop()
+    rm(tmp)
 
-  #browser()
+  dens_obj = get_stat_density(stat_obj)
 
   stopifnot(exprs = {
     is_xy_density(dens_obj) || is.function(dens_obj)
@@ -963,7 +945,11 @@ plot_posterior_ = function(
       stop()
   }
 
-  check_xlim(xlim)
+  tmp = check_lim(xlim, "x")
+  if (!is.null(tmp))
+    stop(tmp)
+  else
+    rm(tmp)
 
   if ("ylim" %in% names(dots) && !is.null(dots$ylim))
     check_ylim(dots$ylim)
@@ -2004,11 +1990,6 @@ list_get2 = function(x, key, default = NULL) {
 }
 
 
-is_valid_lim = function(x) {
-  vek::is_num_vec_xyz(x) && length(x) == 2L
-}
-
-
 is_xy_density = function(x) {
   is_list(x) && all(c("x", "y") %in% names(x), na.rm = FALSE)
 }
@@ -2041,10 +2022,12 @@ get_at = function(at, samples, stat) {
     if (length(at) == 0L)
       return(numeric(0L))
 
+    get_modes = \() c("mean", "median", "mean.default", "median.default")
+
     is_q = startsWith(at, "q")
-    is_mode = at %in% c("mean", "median")
+    is_mode = at %in% get_modes()
     q_str = at[is_q]
-    other_str = at[is_mode]
+    mode_str = at[is_mode]
     lit_str = at[!(is_q | is_mode)]
     rm(is_q, is_mode)
 
@@ -2104,22 +2087,31 @@ get_at = function(at, samples, stat) {
     }
 
     modes = numeric(0L)
-    if (length(other_str) > 0L) {
+    if (length(mode_str) > 0L) {
       stopifnot(exprs = {
-        all(other_str %in% c("mean", "median"), na.rm = FALSE) # TODO "mode"
+        all(mode_str %in% get_modes(), na.rm = FALSE) # TODO "mode"
       })
 
       get_default_f = \(k) {
         switch(
           k,
-          "mean" = \(x) mean(x, na.rm = FALSE),
+          "mean" = \(x) mean.default(x, trim = 0, na.rm = FALSE),
+          "mean.default" = mean.default(x, trim = 0, na.rm = FALSE),
           "median" = \(x) stats::median.default(x, na.rm = FALSE),
+          "median.default" = \(x) stats::median.default(x, na.rm = FALSE),
           stop()
         )
       }
 
-      mode_objects = lapply(other_str, \(m) {
-        if (is_list(stat) && m %in% names(stat)) {
+      default_ops = c("mean.default", "median.default")
+
+      mode_objects = lapply(mode_str, \(m) {
+        if (m %in% default_ops) {
+          f = get_default_f(m)
+          m_obj = pcj_safely(f(samples))
+          return(m_obj)
+        }
+        else if (is_list(stat) && m %in% names(stat)) {
           if (is.function(stat[[m]])) {
             f = stat[[m]]
             stopifnot(length(formals(f)) > 0L)
@@ -2147,7 +2139,7 @@ get_at = function(at, samples, stat) {
           stop()
       }, simplify = TRUE, USE.NAMES = FALSE)
 
-      names(modes) = other_str
+      names(modes) = mode_str
     }
 
     values = c(lit, q, modes)
@@ -2166,18 +2158,25 @@ check_lim = function(x, lab) {
     lab %in% c("x", "y")
   })
 
-  stopifnot(is_valid_lim(x))
+  if (!vek::is_num_vec_xyz(x)) {
+    msg = sprintf('"%slim" must be a base-R numeric vector', lab)
+    return(simpleError(msg))
+  }
+
+  if (!(length(x) == 2L)) {
+    msg = sprintf('"%slim" must be of length 2', lab)
+    return(simpleError(msg))
+  }
 
   if (x[1L] > x[2L]) {
-    fmt = paste0('Inverting the %s-axis by setting "%slim[1] > %slim[2]" is',
-                 ' currently supported', collapse = NULL, recycle0 = FALSE)
+    msg = paste0('Inverting the %s-axis by setting "%slim[1] > %slim[2]" is',
+                 ' currently not supported', collapse = NULL,
+                 recycle0 = FALSE) |>
+      sprintf(lab, lab, lab)
 
-    stop(sprintf(fmt, lab, lab, lab))
+    return(simpleError(msg))
   }
 
   return(invisible(NULL))
 }
 
-
-check_xlim = function(x) check_lim(x, "x")
-check_ylim = function(x) check_lim(x, "y")
