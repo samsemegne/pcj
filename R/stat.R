@@ -161,14 +161,14 @@ check_xy_density = function(x, label) {
 
 
 get_stat_density = function(x) {
-  if (is_xy_density(stat_obj))
-    return(stat_obj)
-  else if (is.function(stat_obj))
-    return(stat_obj)
-  else if (is_list(stat_obj) && is_xy_density(stat_obj$density))
-    return(stat_obj$density)
-  else if (is_list(stat_obj) && is.function(stat_obj$density))
-    return(stat_obj$density)
+  if (is_xy_density(x))
+    return(x)
+  else if (is.function(x))
+    return(x)
+  else if (is_list(x) && is_xy_density(x$density))
+    return(x$density)
+  else if (is_list(x) && is.function(x$density))
+    return(x$density)
   else
     stop()
 }
