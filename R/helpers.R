@@ -1,5 +1,31 @@
 
 
+recursive_unclass = function(x, depth = 1000L) {
+  stopifnot(exprs = {
+    !is.environment(x)
+    vek::is_int_vec_x1(depth)
+    depth >= 0L
+  })
+
+  if (depth == 0L)
+    return(x)
+
+  if (is_list(unclass(x))) {
+    depth = depth - 1L
+    if (depth == 0L)
+      return(unclass(x))
+
+    a = attributes(unclass(x))
+    obj = lapply(x, \(k) Tailcall(recursive_unclass, k, depth - 1L))
+    attributes(obj) = a
+    return(obj)
+  }
+  else {
+    return(unclass(x))
+  }
+}
+
+
 dots_names = function(...) {
   if (...length() == 0L)
     return(character(0L))

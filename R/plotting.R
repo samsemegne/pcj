@@ -74,7 +74,7 @@ plot_prior_predictive = function(
   })
 
   if (graphics %in% c("lines", "points")) {
-    ##browser()
+    ###browser()
     dots = list(...)
     do.call(plot_prior_predictive_, c(list(object), dots, list(x = x, stat = stat, transform = transform)))
     #return(plot_prior_predictive_(
@@ -133,6 +133,7 @@ plot_posterior = function(
     return(plot_point_prior(object, ..., x = x, stat = stat, transform = transform))
   }
   else if (graphics %in% c("lines", "points")) {
+    #browser()
     return(plot_posterior_(object, ..., x = x, stat = stat, transform = transform))
   }
   else if (graphics == "area") {
@@ -354,6 +355,11 @@ plot_prior_ = function(
   else
     xlim = auto_xlim_pcj_jags_dist(prior_obj)
 
+  check_xlim(xlim)
+
+  if ("ylim" %in% names(dots) && !is.null(dots$ylim))
+    check_ylim(dots$ylim)
+
   if (is.null(at))
     x = seq(xlim[1L], xlim[2L], length.out = 501L)
   else
@@ -521,7 +527,7 @@ plot_prior_predictive_ = function(
     if (dots_names(...)[1L] == "")
       dots = dots[-1L]
 
-  #browser()
+  ##browser()
   stopifnot(is_uniquely_named_list(dots))
 
   var_name = x
@@ -550,11 +556,7 @@ plot_prior_predictive_ = function(
   }
 
   stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
-  if (is_list(unclass(stat_obj_$result)))
-    stat_obj = rapply(stat_obj_$result, unclass, "ANY", NULL, "list") # TODO first check all are list or function
-  else
-    stat_obj = unclass(stat_obj_$result)
-
+  stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
   stopifnot(exprs = {
     is.function(stat_obj) || is_list(stat_obj)
   })
@@ -645,6 +647,11 @@ plot_prior_predictive_ = function(
       xlim = range(stat_obj$x, na.rm = TRUE)
   }
 
+  check_xlim(xlim)
+
+  if ("ylim" %in% names(dots) && !is.null(dots$ylim))
+    check_ylim(dots$ylim)
+
   if (is.null(at))
     x = seq.default(xlim[1L], xlim[2L], length.out = 501L)
   else
@@ -670,7 +677,8 @@ plot_prior_predictive_ = function(
   if (is.function(dens_obj)) {
     y = dens_obj(x) # TODO safely()
     xy = list(x = x, y = y)
-  } else { # TODO else if check
+  } else if (is_xy_density(dens_obj)) {
+    browser()
     xy = dens_obj[c("x", "y")] # TODO
     fill_zero_left = attr(dens_obj, "is_left_tail_zero", TRUE) %||% FALSE
     fill_zero_right = attr(dens_obj, "is_right_tail_zero", TRUE) %||% FALSE
@@ -717,6 +725,8 @@ plot_prior_predictive_ = function(
     if (graphics == "points") {
       xy = stats::approx(xy$x, xy$y, xout = x, method = "linear")
     }
+  } else {
+    stop()
   }
 
   xlab = get_var_lab(var_name)
@@ -799,15 +809,16 @@ plot_posterior_ = function(
     #x %in% c("mu", "sigma") # TODO
   })
 
-  if (is.null(stat)) {
+  #browser()
+
+  if (is.null(stat))
     stat = gaussian_density
-  } else {
-    stopifnot(exprs = {
-      !is.object(stat)
-      is.function(stat)
-      length(formals(stat)) > 0L
-    })
-  }
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
 
   graphics = "lines"
   if (...length() > 0L)
@@ -824,6 +835,8 @@ plot_posterior_ = function(
     if (dots_names(...)[1L] == "")
       dots = dots[-1L]
 
+  #browser()
+
   add = FALSE
   if ("add" %in% names(dots)) {
     add = dots$add
@@ -836,6 +849,8 @@ plot_posterior_ = function(
   rm(x)
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
+
+  #browser()
 
   if (is.pcj_model1(object)) {
     samples = get_sample.pcj_model1(object, var_name, "all")
@@ -896,11 +911,7 @@ plot_posterior_ = function(
   }
 
   stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
-  if (is_list(unclass(stat_obj_$result)))
-    stat_obj = rapply(stat_obj_$result, unclass, "ANY", NULL, "list") # TODO first check all are list or function
-  else
-    stat_obj = unclass(stat_obj_$result)
-
+  stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
   stopifnot(exprs = {
     is.function(stat_obj) || is_list(stat_obj)
   })
@@ -916,6 +927,8 @@ plot_posterior_ = function(
     dens_obj = stat_obj$density
   else
     stop()
+
+  #browser()
 
   stopifnot(exprs = {
     is_xy_density(dens_obj) || is.function(dens_obj)
@@ -941,7 +954,6 @@ plot_posterior_ = function(
 
   if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
-    stopifnot(is_valid_lim(xlim))
   } else {
     if (is.function(dens_obj))
       xlim = range(samples, na.rm = TRUE)
@@ -950,6 +962,11 @@ plot_posterior_ = function(
     else
       stop()
   }
+
+  check_xlim(xlim)
+
+  if ("ylim" %in% names(dots) && !is.null(dots$ylim))
+    check_ylim(dots$ylim)
 
   if (is.null(at))
     x = seq.default(xlim[1L], xlim[2L], length.out = 501L)
@@ -994,14 +1011,17 @@ plot_posterior_ = function(
     min_x = x[1L]
     max_x = x[length(x)]
 
+      #browser()
     # Segment xy to be in between the range of x.
     is_left_cut = FALSE
     is_right_cut = FALSE
     if (min(xy$x, na.rm = TRUE) < min_x) {
+      #browser()
       xy = slice_xy(xy$x, xy$y, min_x, FALSE)
       is_left_cut = TRUE
     }
     if (max(xy$x, na.rm = TRUE) > max_x) {
+      #browser()
       xy = slice_xy(xy$x, xy$y, max_x, TRUE)
       is_right_cut = TRUE
     }
@@ -1014,6 +1034,7 @@ plot_posterior_ = function(
       {
         lower = max(xlim[1L], var_bounds$lower, na.rm = FALSE)
         xy = list(x = c(lower, xy$x), y = c(0L, xy$y))
+        #browser()
         rm(lower)
       }
       if (fill_zero_right && !is_right_cut &&
@@ -1021,6 +1042,7 @@ plot_posterior_ = function(
       {
         upper = min(xlim[2L], var_bounds$upper, na.rm = FALSE)
         xy = list(x = c(xy$x, upper), y = c(xy$y, 0L))
+        #browser()
         rm(upper)
       }
     }
@@ -1424,7 +1446,7 @@ plot_sequential = function(
           #class = class,
         ))
 
-      #browser()
+      ##browser()
       prior_area = do.call(plot_prior_predictive_area, args)
       prior_plot = do.call(plot_prior_predictive, args)
     }
@@ -1609,7 +1631,7 @@ plot.pcj_plot_object = function(object) {
 
   object = preprocess_pcj_plot_object(object)
 
-  ##browser()
+  ###browser()
 
   do.call(func, object$args)
 }
@@ -2138,3 +2160,24 @@ get_at = function(at, samples, stat) {
 }
 
 
+check_lim = function(x, lab) {
+  stopifnot(exprs = {
+    vek::is_chr_vec_xb1(lab)
+    lab %in% c("x", "y")
+  })
+
+  stopifnot(is_valid_lim(x))
+
+  if (x[1L] > x[2L]) {
+    fmt = paste0('Inverting the %s-axis by setting "%slim[1] > %slim[2]" is',
+                 ' currently supported', collapse = NULL, recycle0 = FALSE)
+
+    stop(sprintf(fmt, lab, lab, lab))
+  }
+
+  return(invisible(NULL))
+}
+
+
+check_xlim = function(x) check_lim(x, "x")
+check_ylim = function(x) check_lim(x, "y")
