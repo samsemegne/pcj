@@ -1,8 +1,18 @@
 
 
+valueError = function(message) {
+  errorCondition(message, class = "valueError", call = NULL)
+}
+
+
+typeError = function(message) {
+  errorCondition(message, class = "typeError", call = NULL)
+}
+
+
 recursive_unclass = function(x, depth = 1000L) {
   stopifnot(exprs = {
-    !is.environment(x)
+    !is.environment(x) # TODO
     vek::is_int_vec_x1(depth)
     depth >= 0L
   })

@@ -271,6 +271,18 @@ plot_point_prior = function(
       )) |>
       keep(get_supported_plot_default_params())
 
+    if ("ylim" %in% names(args) && !is.null(args$ylim)) {
+      tmp = check_lim(args$ylim, "y")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
+    if ("xlim" %in% names(args) && !is.null(args$xlim)) {
+      tmp = check_lim(args$xlim, "x")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
@@ -360,9 +372,6 @@ plot_prior_ = function(
     stop(tmp)
   else
     rm(tmp)
-
-  if ("ylim" %in% names(dots) && !is.null(dots$ylim))
-    check_ylim(dots$ylim)
 
   if (is.null(at))
     x = seq(xlim[1L], xlim[2L], length.out = 501L)
@@ -468,6 +477,18 @@ plot_prior_ = function(
         data = data
     )) |>
       keep(get_supported_plot_default_params())
+
+    if ("ylim" %in% names(args) && !is.null(args$ylim)) {
+      tmp = check_lim(args$ylim, "y")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
+    if ("xlim" %in% names(args) && !is.null(args$xlim)) {
+      tmp = check_lim(args$xlim, "x")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
@@ -640,9 +661,6 @@ plot_prior_predictive_ = function(
   else
     rm(tmp)
 
-  if ("ylim" %in% names(dots) && !is.null(dots$ylim))
-    check_ylim(dots$ylim)
-
   if (is.null(at))
     x = seq.default(xlim[1L], xlim[2L], length.out = 501L)
   else
@@ -669,8 +687,7 @@ plot_prior_predictive_ = function(
     y = dens_obj(x) # TODO safely()
     xy = list(x = x, y = y)
   } else if (is_xy_density(dens_obj)) {
-    browser()
-    xy = dens_obj[c("x", "y")] # TODO
+    xy = dens_obj[c("x", "y")]
     fill_zero_left = attr(dens_obj, "is_left_tail_zero", TRUE) %||% FALSE
     fill_zero_right = attr(dens_obj, "is_right_tail_zero", TRUE) %||% FALSE
     stopifnot(exprs = {
@@ -773,6 +790,18 @@ plot_prior_predictive_ = function(
         data = data
     )) |>
       keep(get_supported_plot_default_params())
+
+    if ("ylim" %in% names(args) && !is.null(args$ylim)) {
+      tmp = check_lim(args$ylim, "y")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
+    if ("xlim" %in% names(args) && !is.null(args$xlim)) {
+      tmp = check_lim(args$xlim, "x")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
@@ -951,9 +980,6 @@ plot_posterior_ = function(
   else
     rm(tmp)
 
-  if ("ylim" %in% names(dots) && !is.null(dots$ylim))
-    check_ylim(dots$ylim)
-
   if (is.null(at))
     x = seq.default(xlim[1L], xlim[2L], length.out = 501L)
   else
@@ -1102,6 +1128,18 @@ plot_posterior_ = function(
       )) |>
       keep(get_supported_plot_default_params())
 
+    if ("ylim" %in% names(args) && !is.null(args$ylim)) {
+      tmp = check_lim(args$ylim, "y")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
+    if ("xlim" %in% names(args) && !is.null(args$xlim)) {
+      tmp = check_lim(args$xlim, "x")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
@@ -1228,6 +1266,18 @@ plot_area = function(
         data = data
       )) |>
       keep(get_supported_plot_default_params())
+
+    if ("ylim" %in% names(args) && !is.null(args$ylim)) {
+      tmp = check_lim(args$ylim, "y")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
+
+    if ("xlim" %in% names(args) && !is.null(args$xlim)) {
+      tmp = check_lim(args$xlim, "x")
+      if (!is.null(tmp)) stop(tmp)
+      else rm(tmp)
+    }
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
@@ -2152,29 +2202,32 @@ get_at = function(at, samples, stat) {
 }
 
 
-check_lim = function(x, lab) {
+check_lim = function(x, label) {
   stopifnot(exprs = {
-    vek::is_chr_vec_xb1(lab)
-    lab %in% c("x", "y")
+    vek::is_chr_vec_xb1(label)
+    label %in% c("x", "y")
   })
 
+  if (is.null(x))
+    return(invisible(NULL))
+
   if (!vek::is_num_vec_xyz(x)) {
-    msg = sprintf('"%slim" must be a base-R numeric vector', lab)
-    return(simpleError(msg))
+    msg = sprintf('"%slim" must be a base-R numeric vector', label)
+    return(typeError(msg))
   }
 
   if (!(length(x) == 2L)) {
-    msg = sprintf('"%slim" must be of length 2', lab)
-    return(simpleError(msg))
+    msg = sprintf('"%slim" must be of length 2', label)
+    return(valueError(msg))
   }
 
   if (x[1L] > x[2L]) {
     msg = paste0('Inverting the %s-axis by setting "%slim[1] > %slim[2]" is',
                  ' currently not supported', collapse = NULL,
                  recycle0 = FALSE) |>
-      sprintf(lab, lab, lab)
+      sprintf(label, label, label)
 
-    return(simpleError(msg))
+    return(valueError(msg))
   }
 
   return(invisible(NULL))
