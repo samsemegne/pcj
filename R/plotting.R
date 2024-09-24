@@ -76,7 +76,7 @@ plot_prior_predictive = function(
   if (graphics %in% c("lines", "points")) {
     ###browser()
     dots = list(...)
-    do.call(plot_prior_predictive_, c(list(object), dots, list(x = x, stat = stat, transform = transform)))
+    return(do.call(plot_prior_predictive_, c(list(object), dots, list(x = x, stat = stat, transform = transform))))
     #return(plot_prior_predictive_(
     #  object,
     #  ...,
@@ -118,21 +118,7 @@ plot_posterior = function(
     graphics %in% c("lines", "points", "area")
   })
 
-  prior_key = sprintf("%s%s", "prior_", x)
-  if (is.pcj_process_capability_jags1(object))
-    prior_obj = object$prior_study$result[[prior_key]]
-  else if (is.pcj_model1(object))
-    prior_obj = object$result[[prior_key]]
-  else
-    stop()
-
-  if (is_pcj_point_prior(prior_obj)) {
-    #dots = list(...) |>
-    #  smth(use_if_no_theme(main = "Posterior"))
-
-    return(plot_point_prior(object, ..., x = x, stat = stat, transform = transform))
-  }
-  else if (graphics %in% c("lines", "points")) {
+  if (graphics %in% c("lines", "points")) {
     #browser()
     return(plot_posterior_(object, ..., x = x, stat = stat, transform = transform))
   }
@@ -155,6 +141,7 @@ plot_point_prior = function(
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
+    is.pcj_prior_predictive1(object$prior_study)
     vek::is_chr_vec_xb1(x)
     #vek::is_num_vec_xyz(transform) # TODO
     x %in% c("mu", "sigma")
@@ -191,6 +178,7 @@ plot_point_prior = function(
 
   prior_key = sprintf("prior_%s", var_name)
   prior_obj = object$prior_study$result[[prior_key]]
+  stopifnot(is_pcj_point_prior(prior_obj))
 
   xlim = c(-.5, .5) + prior_obj
   ylab = "Mass"
@@ -511,6 +499,8 @@ plot_prior_predictive_ = function(
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
+    is.pcj_prior_predictive1(object$prior_study)
+    is.null(object$prior_study$error)
     vek::is_chr_vec_xb1(x)
 
     #vek::is_num_vec_xyz(transform) # TODO
@@ -829,7 +819,8 @@ plot_posterior_ = function(
     #x %in% c("mu", "sigma") # TODO
   })
 
-  #browser()
+  if (is.pcj_model1(object))
+    stopifnot(is.null(object$error))
 
   if (is.null(stat))
     stat = gaussian_density
@@ -879,12 +870,15 @@ plot_posterior_ = function(
            !is.null(object$sequential_analysis))
   {
     last_i = length(object$sequential_analysis$fit)
-    samples = object$sequential_analysis$fit[[last_i]] |>
+    last_fit = object$sequential_analysis$fit[[last_i]]
+    stopifnot(is.null(last_fit$error))
+    samples = last_fit |>
       get_sample.pcj_model1(var_name, "all")
   }
   else if (is.pcj_process_capability_jags1(object) &&
            is.null(object$sequential_analysis))
   {
+    stopifnot(is.null(object$pcj_model1$error))
     samples = get_sample.pcj_model1(object$pcj_model1, var_name, "all")
   }
   else {
@@ -1159,6 +1153,13 @@ plot_area = function(
     transform = list()
   )
 {
+  stopifnot(exprs = {
+    # TODO add object checks
+    vek::is_chr_vec_xb1(x)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+
+  })
 
   dots = list(...)
   #stopifnot(is_uniquely_named_list(dots))
