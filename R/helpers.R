@@ -10,6 +10,11 @@ typeError = function(message) {
 }
 
 
+runtimeError = function(message) {
+  errorCondition(message, class = "runtimeError", call = NULL)
+}
+
+
 recursive_unclass = function(x, depth = 1000L) {
   stopifnot(exprs = {
     !is.environment(x) # TODO

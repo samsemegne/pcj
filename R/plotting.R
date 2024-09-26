@@ -560,38 +560,30 @@ plot_prior_predictive_ = function(
     #))
   }
 
-  stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
+  stat_obj_ = pcj_safely(do.call(stat, stat_args))
+
+  if (!is.null(stat_obj_$error)) {
+    return(new_pcj_plot_object(
+      NULL, NULL, list(stat_result = stat_obj_),
+      simpleError('"stat" produced errors'),
+      NULL
+    ))
+  }
+
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
 
   tmp = check_stat_result(stat_obj, "stat")
-  if (!is.null(tmp))
-    stop(tmp)
-  else
+  if (!is.null(tmp)) {
+    return(new_pcj_plot_object(
+      NULL, NULL, list(stat_result = stat_obj_, stat_check = tmp),
+      simpleError('"stat" result is invalid'),
+      NULL
+    ))
+  } else {
     rm(tmp)
+  }
 
   dens_obj = get_stat_density(stat_obj)
-
-  stopifnot(exprs = {
-    is_xy_density(dens_obj) || is.function(dens_obj)
-  })
-
-  if (is.function(dens_obj)) {
-    stopifnot(exprs = {
-      length(formals(dens_obj)) > 0L
-    })
-  }
-  else if (is_xy_density(dens_obj)) {
-    stopifnot(exprs = {
-      vek::is_num_vec_xyz(dens_obj$x)
-      # TODO check for no more than 2 repetitions
-      !is.unsorted(dens_obj$x, na.rm = FALSE, strictly = FALSE)
-      vek::is_num_vec_xyz(dens_obj$y)
-      length(dens_obj$x) == length(dens_obj$y)
-      length(dens_obj$x) > 1L
-    })
-  } else {
-    stop()
-  }
 
   at = NULL
   if ("at" %in% names(dots)) {
@@ -599,7 +591,17 @@ plot_prior_predictive_ = function(
     dots$at = NULL
   }
 
-  at = get_at(at, samples, stat)
+  at_obj = get_at(at, samples, stat)
+  if (!is.null(at_obj$error)) {
+    data = list(stat_result = stat_obj_, stat_check = tmp, at_result = at_obj)
+    return(new_pcj_plot_object(
+      NULL, NULL, data = data,
+      simpleError('Failed to obtain "at" using "stat"'),
+      NULL
+    ))
+  }
+
+  at = at_obj$result
   stopifnot({
     vek::is_num_vec_xyz(at) || is.null(at)
   })
@@ -731,7 +733,8 @@ plot_prior_predictive_ = function(
   legend = xlab
   ylab = "Density"
   ylim = range(xy$y, na.rm = TRUE)
-  data = c(xy, list(x_ = var_name, transform = transform, add = add))
+  data = c(xy, list(x_ = var_name, transform = transform, add = add,
+                    stat = stat_obj_))
 
   args = dots |>
     smth(get_theme_args(
@@ -819,8 +822,9 @@ plot_posterior_ = function(
     #x %in% c("mu", "sigma") # TODO
   })
 
-  if (is.pcj_model1(object))
-    stopifnot(is.null(object$error))
+  # TODO throw error if model has error
+  #if (is.pcj_model1(object))
+  #  stopifnot(is.null(object$error))
 
   if (is.null(stat))
     stat = gaussian_density
@@ -871,14 +875,16 @@ plot_posterior_ = function(
   {
     last_i = length(object$sequential_analysis$fit)
     last_fit = object$sequential_analysis$fit[[last_i]]
-    stopifnot(is.null(last_fit$error))
+    # TODO the error check
+    #stopifnot(is.null(last_fit$error))
     samples = last_fit |>
       get_sample.pcj_model1(var_name, "all")
   }
   else if (is.pcj_process_capability_jags1(object) &&
            is.null(object$sequential_analysis))
   {
-    stopifnot(is.null(object$pcj_model1$error))
+    # TODO the error check
+    #stopifnot(is.null(object$pcj_model1$error))
     samples = get_sample.pcj_model1(object$pcj_model1, var_name, "all")
   }
   else {
@@ -891,7 +897,17 @@ plot_posterior_ = function(
     dots$at = NULL
   }
 
-  at = get_at(at, samples, stat)
+  at_obj = get_at(at, samples, stat)
+  if (!is.null(at_obj$error)) {
+    data = list(stat_result = stat_obj_, stat_check = tmp, at_result = at_obj)
+    return(new_pcj_plot_object(
+      NULL, NULL, data,
+      simpleError('Failed to obtain "at" using "stat"'),
+      NULL
+    ))
+  }
+
+  at = at_obj$result
   stopifnot({
     vek::is_num_vec_xyz(at) || is.null(at)
   })
@@ -924,38 +940,52 @@ plot_posterior_ = function(
     #))
   }
 
-  stat_obj_ = pcj_safely(do.call(stat, stat_args)) # TODO check conditions
+  stat_obj_ = pcj_safely(do.call(stat, stat_args))
+
+  if (!is.null(stat_obj_$error)) {
+    return(new_pcj_plot_object(
+      NULL, NULL, list(stat_result = stat_obj_),
+      simpleError('"stat" produced errors'),
+      NULL
+    ))
+  }
+
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
 
   tmp = check_stat_result(stat_obj, "stat")
-  if (!is.null(tmp))
-    stop(tmp)
-  else
+  if (!is.null(tmp)) {
+    return(new_pcj_plot_object(
+      NULL, NULL, list(stat_result = stat_obj_, stat_check = tmp),
+      simpleError('"stat" result is invalid'),
+      NULL
+    ))
+  } else {
     rm(tmp)
+  }
 
   dens_obj = get_stat_density(stat_obj)
 
-  stopifnot(exprs = {
-    is_xy_density(dens_obj) || is.function(dens_obj)
-  })
-
-  if (is.function(dens_obj)) {
-    stopifnot(exprs = {
-      length(formals(dens_obj)) > 0L
-    })
-  }
-  else if (is_xy_density(dens_obj)) {
-    stopifnot(exprs = {
-      vek::is_num_vec_xyz(dens_obj$x)
-      # TODO check for no more than 2 repetitions
-      !is.unsorted(dens_obj$x, na.rm = FALSE, strictly = FALSE)
-      vek::is_num_vec_xyz(dens_obj$y)
-      length(dens_obj$x) == length(dens_obj$y)
-      length(dens_obj$x) > 1L
-    })
-  } else {
-    stop()
-  }
+  #stopifnot(exprs = {
+  #  is_xy_density(dens_obj) || is.function(dens_obj)
+  #})
+  #
+  #if (is.function(dens_obj)) {
+  #  stopifnot(exprs = {
+  #    length(formals(dens_obj)) > 0L
+  #  })
+  #}
+  #else if (is_xy_density(dens_obj)) {
+  #  stopifnot(exprs = {
+  #    vek::is_num_vec_xyz(dens_obj$x)
+  #    # TODO check for no more than 2 repetitions
+  #    !is.unsorted(dens_obj$x, na.rm = FALSE, strictly = FALSE)
+  #    vek::is_num_vec_xyz(dens_obj$y)
+  #    length(dens_obj$x) == length(dens_obj$y)
+  #    length(dens_obj$x) > 1L
+  #  })
+  #} else {
+  #  stop()
+  #}
 
   if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
@@ -1065,7 +1095,8 @@ plot_posterior_ = function(
   legend = xlab
   ylab = "Density"
   ylim = range(xy$y, na.rm = TRUE)
-  data = c(xy, list(x_ = var_name, transform = transform, add = add))
+  data = c(xy, list(x_ = var_name, transform = transform, add = add,
+                    stat = stat_obj_))
 
   args = dots |>
     smth(get_theme_args(
@@ -1197,9 +1228,16 @@ plot_area = function(
   )
 
   prior_lines = do.call(func, args)
+  if (!is.null(prior_lines$error)) {
+    return(new_pcj_plot_object(
+      NULL, NULL, prior_lines$result$data,
+      prior_lines$error,
+      prior_lines$warnings
+    ))
+  }
 
-  x_ = prior_lines$args$x
-  y_ = prior_lines$args$y
+  x_ = prior_lines$result$args$x
+  y_ = prior_lines$result$args$y
   x = c(x_[1L], x_, x_[length(x_)], x_[length(x_)], x_[1L])
   y = c(y_[1L], y_, y_[length(y_)], 0L, 0L)
 
@@ -1216,6 +1254,9 @@ plot_area = function(
   )
 
   data = list(x = x, y = y, x_ = var_name, transform = transform, add = add)
+  if (distribution %in% c("posterior", "prior_predictive")) {
+    data$stat = prior_lines$result$data$stat
+  }
 
   args = list(density = NULL, angle = 45L, fillOddEven = FALSE) |>
     smth(dots) |>
@@ -1608,22 +1649,41 @@ create_histogram_density_func = function(
 }
 
 
-new_pcj_plot_object = function(func, args, data) {
+#new_pcj_plot_object = function(func, args, data) {
+#  structure(
+#    list(func = func, args = args, data = data),
+#    class = "pcj_plot_object"
+#  )
+#}
+
+new_pcj_plot_object = function(
+    func,
+    args,
+    data,
+    error = NULL,
+    warnings = NULL
+  )
+{
   structure(
-    list(func = func, args = args, data = data),
+    list(
+      error = error,
+      warnings = warnings,
+      result = list(func = func, args = args, data = data)
+    ),
     class = "pcj_plot_object"
   )
 }
 
+
 preprocess_pcj_plot_object = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
-  args = object$args
+  args = object$result$args
 
-  if ("offset" %in% names(object$data$transform)) {
-    offset = object$data$transform$offset
+  if ("offset" %in% names(object$result$data$transform)) {
+    offset = object$result$data$transform$offset
 
-    if (object$func == "arrows") {
+    if (object$result$func == "arrows") {
       if (vek::is_num_vec(args$x0))
         args$x0 = args$x0 + offset[1L]
 
@@ -1647,15 +1707,25 @@ preprocess_pcj_plot_object = function(object) {
     # TODO add else. and axis offset?
   }
 
-  object$args = args
+  object$result$args = args
   return(object)
 }
 
 
 #' @export
 plot.pcj_plot_object = function(object) {
+  stopifnot(is.pcj_plot_object(object))
+
+  if (!is.null(object$error))
+    stop(object$error)
+
+  if (!is.null(object$warnings)) {
+    for (w in object$warnings)
+      warning(w)
+  }
+
   func = switch(
-    object$func,
+    object$result$func,
     "plot.default" = graphics::plot.default,
     "plot.xy" = graphics::plot.xy,
     "lines.default" = graphics::lines.default,
@@ -1666,11 +1736,11 @@ plot.pcj_plot_object = function(object) {
     stop()
   )
 
-  object = preprocess_pcj_plot_object(object)
+  obj = preprocess_pcj_plot_object(object)
 
-  ###browser()
+  do.call(func, obj$result$args)
 
-  do.call(func, object$args)
+  return(invisible(object))
 }
 
 
@@ -1704,6 +1774,8 @@ plot.pcj_plot_object_list = function(object) {
   } else {
     stop()
   }
+
+  #return(invisible(object))
 }
 
 
@@ -2009,16 +2081,16 @@ pcj_plot_object_axis_lim_raw = function(object, side, lim) {
   g = switch(lim, "min" = min, "max" = max, stop())
   arrows_params = sprintf("%s%s", side, c("0", "1")) # e.g. c('y0', 'y1')
 
-  if (object$func == "arrows") {
-    value0 = object$args[[arrows_params[1L]]]
-    value1 = object$args[[arrows_params[2L]]]
+  if (object$result$func == "arrows") {
+    value0 = object$result$args[[arrows_params[1L]]]
+    value1 = object$result$args[[arrows_params[2L]]]
     if (vek::is_num_vec(value0) || vek::is_num_vec(value1))
       return(g(value0, value1, na.rm = FALSE)) # TODO what if is NA or NaN?
     else
       return(NA) # TODO what return value?
   }
   else {
-    values = object$args[[side]]
+    values = object$result$args[[side]]
     if (vek::is_num_vec(values))
       return(g(values, na.rm = TRUE))
     else
@@ -2046,20 +2118,37 @@ is_xy_density = function(x) {
 }
 
 
-# TODO add mean.default and median.default parsing
 get_at = function(at, samples, stat) {
   stopifnot(exprs = {
     vek::is_num_vec_xyz(samples)
-    # TODO check stat
     is.null(at) || vek::is_num_vec_xyz(at) || is.function(at) ||
       vek::is_chr_vec_xb(at)
   })
 
+  tmp = check_stat_result(stat, "stat")
+  if (!is.null(tmp))
+    stop(tmp)
+  else
+    rm(tmp)
+
+  new_pcj_safe_obj = \(k) {
+    obj = list(
+      error = NULL,
+      warnings = NULL,
+      conditions = NULL,
+      outputs = NULL,
+      result = k
+    )
+
+    stopifnot(is_pcj_safely_obj(obj))
+    return(obj)
+  }
+
   if (is.null(at)) {
-    return(at)
+    return(new_pcj_safe_obj(at))
   }
   else if (vek::is_num_vec_xyz(at)) {
-    return(at)
+    return(new_pcj_safe_obj(at))
   }
   else if (is.function(at)) {
     stopifnot(exprs = {
@@ -2067,16 +2156,15 @@ get_at = function(at, samples, stat) {
     })
 
     at_obj = pcj_safely(at(samples))
-    at = at$result
-    return(at)
+    return(at_obj)
   } else if (vek::is_chr_vec_xb(at)) {
     if (length(at) == 0L)
       return(numeric(0L))
 
-    get_modes = \() c("mean", "median", "mean.default", "median.default")
+    supported_modes = c("mean", "median", "mean.default", "median.default")
 
     is_q = startsWith(at, "q")
-    is_mode = at %in% get_modes()
+    is_mode = at %in% supported_modes
     q_str = at[is_q]
     mode_str = at[is_mode]
     lit_str = at[!(is_q | is_mode)]
@@ -2087,8 +2175,12 @@ get_at = function(at, samples, stat) {
       # TODO don't allow case both "q.5" and "median" %in% at
     })
 
+    results = list()
+
     lit = numeric(0L)
     if (length(lit_str) > 0L) {
+      # Obtain literal values.
+      # TODO, do for each value individually, and don't throw error
       lit = suppressWarnings(as.numeric(lit_str))
       stopifnot(exprs = {
         vek::is_num_vec_xyz(lit)
@@ -2100,6 +2192,7 @@ get_at = function(at, samples, stat) {
 
     q = numeric(0L)
     if (length(q_str) > 0L) {
+      # Obtain quantiles.
       q_val = sub(".", "", q_str)
       q_val = suppressWarnings(as.numeric(q_val))
       stopifnot(exprs = {
@@ -2109,94 +2202,167 @@ get_at = function(at, samples, stat) {
       })
 
       q_obj = NULL
-      if (is_list(stat) && "quantile" %in% names(stat) &&
-          is.function(stat$quantile))
+      if (is_list(stat) && "quantile" %in% names(stat))
       {
-        stopifnot(length(formals(stat$quantile)) > 1L)
         q_obj = pcj_safely(stat$quantile(samples, q_val))
-        q = q_obj$result # TODO check conditions
+        q = q_obj$result
 
       } else {
         q_obj = pcj_safely(stats::quantile(samples, q_val))
-        q = q_obj$result # TODO check conditions
+        q = q_obj$result
       }
 
-      r1 = rank(q, TRUE, "average")
-      r2 = rank(q_val, TRUE, "average")
-      names(r1) = NULL
-      names(r2) = NULL
-      stopifnot(exprs = {
-        vek::is_num_vec_xyz(q)
-        length(q) == length(q_val)
-        identical(r1, r2)
-        all(q != q_val, na.rm = FALSE)
-      })
-      rm(r1, r2)
+      if (!is.null(q_obj$error)) {
+        q = rep_len(NaN, length(q_str))
+        names(q) = q_str
+        results = c(results, list(quantile = q_obj))
+      } else {
+        e = NULL
+        if (!vek::is_num_vec(q))
+          e = e %||%
+            typeError('"quantile" must return a base-R numeric vector')
 
-      names(q_obj$result) = q_str
-      names(q) = q_str
+        if (!vek::is_num_vec_xyz(q))
+          e = e %||% valueError('"quantile" result must be finite')
+
+        if (length(q) != length(q_val))
+          e = e %||%
+            valueError('"quantile" result length must equal input length')
+
+        r1 = rank(q, TRUE, "average")
+        r2 = rank(q_val, TRUE, "average")
+        names(r1) = NULL
+        names(r2) = NULL
+        if (!identical(r1, r2))
+          e = e %||%
+          valueError('"quantile" result rank must equal input rank')
+
+        rm(r1, r2)
+
+        if (any(q == q_val, na.rm = FALSE))
+          e = e %||% valueError('"quantile" results can\'t equal input')
+
+        q_obj$error = e
+        if (!is.null(e))
+          q = rep_len(NaN, length(q_str))
+
+        names(q) = q_str
+        results = c(results, list(quantile = q_obj))
+        rm(e)
+      }
+
+      #stopifnot(exprs = {
+      #  vek::is_num_vec_xyz(q)
+      #  length(q) == length(q_val)
+      #  identical(r1, r2)
+      #  all(q != q_val, na.rm = FALSE)
+      #})
+      #rm(r1, r2)
+
+
+      #names(q_obj$result) = q_str
+      #names(q) = q_str
+      #results = c(results, list(quantile = q_obj))
     }
 
     modes = numeric(0L)
     if (length(mode_str) > 0L) {
+      # Obtain modes.
       stopifnot(exprs = {
-        all(mode_str %in% get_modes(), na.rm = FALSE) # TODO "mode"
+        all(mode_str %in% supported_modes, na.rm = FALSE) # TODO "mode"
       })
 
       get_default_f = \(k) {
         switch(
           k,
-          "mean" = \(x) mean.default(x, trim = 0, na.rm = FALSE),
-          "mean.default" = mean.default(x, trim = 0, na.rm = FALSE),
-          "median" = \(x) stats::median.default(x, na.rm = FALSE),
+          "mean.default" = \(x) mean.default(x, trim = 0, na.rm = FALSE),
           "median.default" = \(x) stats::median.default(x, na.rm = FALSE),
           stop()
         )
       }
 
       default_ops = c("mean.default", "median.default")
+      is_valid_mode = vek::is_num_vec_xyz1
 
-      mode_objects = lapply(mode_str, \(m) {
+      obtain_mode_obj = \(m) {
         if (m %in% default_ops) {
           f = get_default_f(m)
           m_obj = pcj_safely(f(samples))
           return(m_obj)
         }
         else if (is_list(stat) && m %in% names(stat)) {
-          if (is.function(stat[[m]])) {
-            f = stat[[m]]
-            stopifnot(length(formals(f)) > 0L)
+          m_val = stat[[m]]
+          if (is.function(m_val)) {
+            f = m_val
             m_obj = pcj_safely(f(samples))
             return(m_obj)
-          } else if (vek::is_num_vec_xyz1(stat[[m]])) {
-            return(stat[[m]])
+          } else if (is_valid_mode(m_val)) {
+            return(m_val)
           } else {
             stop()
           }
         } else {
-          f = get_default_f(m)
-          m_obj = pcj_safely(f(samples))
-          return(m_obj)
+          stop()
         }
-      }) # list of pcj_safely() objects
+      }
 
-      names(mode_objects) = mode_objects
-      modes = sapply(mode_objects, \(k) {
-        if (is_pcj_safely_obj(k))
-          return(k$result)
-        else if (vek::is_num_vec_xyz(k))
+      mode_objects = lapply(mode_str, obtain_mode_obj)
+      names(mode_objects) = mode_str
+
+      get_mode = \(k) {
+        if (is_pcj_safely_obj(k)) {
+          if (is_valid_mode(k$result))
+            return(k$result)
+          else
+            return(NaN)
+        }
+        else if (is_valid_mode(k))
           return(k)
         else
           stop()
-      }, simplify = TRUE, USE.NAMES = FALSE)
+      }
 
+      modes = sapply(mode_objects, get_mode, simplify = TRUE, USE.NAMES = FALSE)
       names(modes) = mode_str
+
+      results = c(results, Filter(is_pcj_safely_obj, mode_objects))
     }
 
     values = c(lit, q, modes)
     # Put the values in the order of "at".
     values = values[at]
-    return(values)
+
+    get_smth = \(obj, smth) {
+      stopifnot(exprs = {
+        is_uniquely_named_list(obj)
+        vek::is_chr_vec_xb1(smth)
+      })
+
+      if (length(obj) == 0L)
+        return(NULL)
+
+      tmp = sapply(obj, is_pcj_safely_obj, simplify = TRUE, USE.NAMES = FALSE)
+      stopifnot(all(tmp, na.rm = FALSE))
+
+      has_smth = sapply(obj, \(o) {
+        !is.null(o[[smth]])
+      }, simplify = TRUE, USE.NAMES = FALSE)
+
+      if (!any(has_smth, na.rm = FALSE))
+        return(NULL)
+
+      res = obj[has_smth]
+      names(res) = names(obj)[has_smth]
+      return(res)
+    }
+
+    return(list(
+      error = get_smth(results, "error"), # Null or named list
+      warnings = get_smth(results, "warnings"),
+      conditions = get_smth(results, "conditions"),
+      outputs = get_smth(results, "outputs"),
+      result = values # Named numeric vector
+    ))
   } else {
     stop()
   }
