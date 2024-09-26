@@ -563,8 +563,10 @@ plot_prior_predictive_ = function(
   stat_obj_ = pcj_safely(do.call(stat, stat_args))
 
   if (!is.null(stat_obj_$error)) {
+    meta = list(result = list(stat = stat_obj_))
+
     return(new_pcj_plot_object(
-      NULL, NULL, list(stat_result = stat_obj_),
+      NULL, NULL, meta,
       simpleError('"stat" produced errors'),
       NULL
     ))
@@ -572,15 +574,15 @@ plot_prior_predictive_ = function(
 
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
 
-  tmp = check_stat_result(stat_obj, "stat")
-  if (!is.null(tmp)) {
+  stat_check = check_stat_result(stat_obj, "stat")
+  if (!is.null(stat_check)) {
+    meta = list(result = list(stat = stat_obj_, stat_check = stat_check))
+
     return(new_pcj_plot_object(
-      NULL, NULL, list(stat_result = stat_obj_, stat_check = tmp),
+      NULL, NULL, meta,
       simpleError('"stat" result is invalid'),
       NULL
     ))
-  } else {
-    rm(tmp)
   }
 
   dens_obj = get_stat_density(stat_obj)
@@ -593,10 +595,11 @@ plot_prior_predictive_ = function(
 
   at_obj = get_at(at, samples, stat)
   if (!is.null(at_obj$error)) {
-    data = list(stat_result = stat_obj_, stat_check = tmp, at_result = at_obj)
+    meta = list(result = list(stat = stat_obj_, stat_check = check_stat, at = at_obj))
+
     return(new_pcj_plot_object(
-      NULL, NULL, data = data,
-      simpleError('Failed to obtain "at" using "stat"'),
+      NULL, NULL, meta,
+      simpleError('Failed to obtain "at"'),
       NULL
     ))
   }
@@ -733,8 +736,11 @@ plot_prior_predictive_ = function(
   legend = xlab
   ylab = "Density"
   ylim = range(xy$y, na.rm = TRUE)
-  data = c(xy, list(x_ = var_name, transform = transform, add = add,
-                    stat = stat_obj_))
+  data = xy |>
+    c(list(
+      x_ = var_name, transform = transform, add = add,
+      result = list(stat = stat_obj_, stat_check = stat_check, at = at_obj)
+    ))
 
   args = dots |>
     smth(get_theme_args(
@@ -760,7 +766,7 @@ plot_prior_predictive_ = function(
     stop()
   )
 
-  graphics_obj = new_pcj_plot_object(func, args, data)
+  graphics_obj = new_pcj_plot_object(func, args, data) # TODO add warnings if warnings
 
   if (add) {
     return(graphics_obj)
@@ -891,6 +897,40 @@ plot_posterior_ = function(
     stop()
   }
 
+  stat_args = list(samples)
+  if ("..." %in% names(formals(stat))) {
+    # Provide metadata about the variable.
+    #stat_args = c(stat_args, list(
+    #  var_name = var_name,
+    #  lower_bound = var_bounds$lower,
+    #  upper_bound = var_bounds$upper
+    #))
+  }
+
+  stat_obj_ = pcj_safely(do.call(stat, stat_args))
+
+  if (!is.null(stat_obj_$error)) {
+    return(new_pcj_plot_object(
+      NULL, NULL, list(result = list(stat = stat_obj_)),
+      simpleError('"stat" produced errors'),
+      NULL
+    ))
+  }
+
+  stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
+
+  stat_check = check_stat_result(stat_obj, "stat")
+  if (!is.null(stat_check)) {
+    data = list(result = list(stat = stat_obj_, stat_check = stat_check))
+
+    return(new_pcj_plot_object(
+      NULL, NULL, data,
+      simpleError('"stat" result is invalid'),
+      NULL
+    ))
+  }
+
+
   at = NULL
   if ("at" %in% names(dots)) {
     at = dots$at
@@ -899,10 +939,12 @@ plot_posterior_ = function(
 
   at_obj = get_at(at, samples, stat)
   if (!is.null(at_obj$error)) {
-    data = list(stat_result = stat_obj_, stat_check = tmp, at_result = at_obj)
+    data = list(result = list(
+      stat = stat_obj_, stat_check = stat_check, at = at_obj))
+
     return(new_pcj_plot_object(
       NULL, NULL, data,
-      simpleError('Failed to obtain "at" using "stat"'),
+      simpleError('Failed to obtain "at"'),
       NULL
     ))
   }
@@ -930,62 +972,7 @@ plot_posterior_ = function(
     })
   }
 
-  stat_args = list(samples)
-  if ("..." %in% names(formals(stat))) {
-    # Provide metadata about the variable.
-    #stat_args = c(stat_args, list(
-    #  var_name = var_name,
-    #  lower_bound = var_bounds$lower,
-    #  upper_bound = var_bounds$upper
-    #))
-  }
-
-  stat_obj_ = pcj_safely(do.call(stat, stat_args))
-
-  if (!is.null(stat_obj_$error)) {
-    return(new_pcj_plot_object(
-      NULL, NULL, list(stat_result = stat_obj_),
-      simpleError('"stat" produced errors'),
-      NULL
-    ))
-  }
-
-  stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
-
-  tmp = check_stat_result(stat_obj, "stat")
-  if (!is.null(tmp)) {
-    return(new_pcj_plot_object(
-      NULL, NULL, list(stat_result = stat_obj_, stat_check = tmp),
-      simpleError('"stat" result is invalid'),
-      NULL
-    ))
-  } else {
-    rm(tmp)
-  }
-
   dens_obj = get_stat_density(stat_obj)
-
-  #stopifnot(exprs = {
-  #  is_xy_density(dens_obj) || is.function(dens_obj)
-  #})
-  #
-  #if (is.function(dens_obj)) {
-  #  stopifnot(exprs = {
-  #    length(formals(dens_obj)) > 0L
-  #  })
-  #}
-  #else if (is_xy_density(dens_obj)) {
-  #  stopifnot(exprs = {
-  #    vek::is_num_vec_xyz(dens_obj$x)
-  #    # TODO check for no more than 2 repetitions
-  #    !is.unsorted(dens_obj$x, na.rm = FALSE, strictly = FALSE)
-  #    vek::is_num_vec_xyz(dens_obj$y)
-  #    length(dens_obj$x) == length(dens_obj$y)
-  #    length(dens_obj$x) > 1L
-  #  })
-  #} else {
-  #  stop()
-  #}
 
   if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
