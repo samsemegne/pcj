@@ -1365,6 +1365,7 @@ plot_sequential = function(
     show_prior = TRUE,
     position = "stack",
     order = -1L,
+    condition_action = "omit_error",
     stat = NULL,
     transform = list()
   )
@@ -1376,6 +1377,8 @@ plot_sequential = function(
     #is.function(stat) # TODO
     vek::is_int_vec_x1(order)
     order %in% c(-1L, 1L)
+    vek::is_chr_vec_xb(condition_action)
+    all(condition_action %in% "omit_error", na.rm = FALSE)
     # TODO transform
     # TODO add
   })
@@ -1383,13 +1386,15 @@ plot_sequential = function(
   # TODO check it's actually sequential object
 
   dots = list(...)
+  if (length(dots) > 0L)
+    stop('Parameter "..." currently serves no purpose')
 
   add = FALSE
-  if ("add" %in% names(dots)) {
-    add = dots$add
-    stopifnot(vek::is_lgl_vec_x1(add))
-    dots$add = NULL
-  }
+  #if ("add" %in% names(dots)) {
+  #  add = dots$add
+  #  stopifnot(vek::is_lgl_vec_x1(add))
+  #  dots$add = NULL
+  #}
 
   var_name = x
   rm(x)
@@ -1403,7 +1408,6 @@ plot_sequential = function(
   }
 
   # 1. -------------------------------------------------------------------------
-
   # Create the individual plots to obtain information about their heights.
   plots = list()
   if (show_prior) {
@@ -1437,6 +1441,18 @@ plot_sequential = function(
     plots[[length(plots) + 1L]] = plt
   }
 
+  has_error = sapply(plots, \(p) return(!is.null(p$error)),
+                     simplify = TRUE, USE.NAMES = FALSE)
+
+  if ("omit_error" %in% condition_action) {
+    if (any(has_error, na.rm = FALSE))
+      plots = plots[!has_error]
+  }
+
+  # TODO handle the case where all plots carried errors.
+  if (length(plots) == 0L) {
+    # ...
+  }
 
   # Obtain the height of each plot, and the overall range of all x values.
   y_max = sapply(plots, \(x) pcj_plot_object_axis_lim_raw(x, "y", "max"))
@@ -1469,7 +1485,6 @@ plot_sequential = function(
 
   #plot_height = sum(adj_y_max, na.rm = FALSE)
 
-  # TODO case model with error
   transform_y = cumsum(c(0L, adj_y_max))[1:length(adj_y_max)]
   plot_height = max(transform_y + y_max, na.rm = FALSE)
   xlim = c(x_min, x_max)
@@ -1478,9 +1493,15 @@ plot_sequential = function(
   # Create the individual plot objects.
   plots = list()
 
-  if (show_prior) {
-    prior_plot = NULL
+  show_prior_ = show_prior
+  if (show_prior_) {
+    omit_prior = "omit_error" %in% condition_action && has_error[1L]
+    show_prior_ = show_prior_ && !omit_prior
+  }
+
+  if (show_prior_) {
     prior_area = NULL
+    prior_plot = NULL
     if (var_name %in% c("mu", "sigma")) {
       # Create the prior plot.
       args = list(
@@ -1490,11 +1511,10 @@ plot_sequential = function(
       ) |>
         c(rm_plot_default_params(dots))
 
-      if (!is_pcj_point_prior(prior_obj))
-        prior_area = do.call(plot_prior_area, args)
-
       prior_plot = do.call(plot_prior, args)
 
+      if (!is_pcj_point_prior(prior_obj))
+        prior_area = do.call(plot_prior_area, args)
     } else {
       # Create the prior predictive plot.
       args = list(
@@ -1511,12 +1531,18 @@ plot_sequential = function(
           #class = class,
         ))
 
-      ##browser()
       prior_area = do.call(plot_prior_predictive_area, args)
       prior_plot = do.call(plot_prior_predictive, args)
     }
 
-    plots[[1L]] = list(prior_area, prior_plot)
+    prior_objects = list(prior_plot)
+    if (!is.null(prior_area))
+      prior_objects = c(list(prior_area), prior_objects)
+
+    #prior_obj_has_error = sapply(prior_objects, \(p) return(!is.null(p$error)),
+    #                         simplify = TRUE, USE.NAMES = FALSE)
+
+    plots[[1L]] = prior_objects
   }
 
   # Create posterior plots.
@@ -1538,6 +1564,27 @@ plot_sequential = function(
     plots[[length(plots) + 1L]] = list(post_area, post_curve)
   }
 
+  has_error_ = sapply(plots, \(p_li) {
+    stopifnot(exprs = {
+      is_list(p_li)
+      length(p_li) > 0L
+    })
+
+    has_pi_li_error = sapply(p_li, \(p) return(!is.null(p$error)),
+                             simplify = TRUE, USE.NAMES = FALSE)
+
+    return(any(has_pi_li_error, na.rm = FALSE))
+  }, simplify = TRUE, USE.NAMES = FALSE)
+
+  # If no error was thrown initially (when obtaining xlim/ylim of each), then
+  # reproducing the plots with the only difference being an offset and expanded
+  # 'xlim' is unlikely to cause errors. Hence, new errors at this point are
+  # currently treated as 'unexpected', but more error handling logic and
+  # recovery attempts might be inserted later.
+  if (any(has_error_, na.rm = FALSE)) {
+    stop('One or more of the sequential plots produced an unexpected error')
+  }
+
   if (order == -1L)
     plots = rev(plots)
 
@@ -1550,6 +1597,12 @@ plot_sequential = function(
     labels = seq_an$sequential_params$at
     if (show_prior)
       labels = c(0L, labels)
+
+    if (any(has_error, na.rm = FALSE)) {
+      stopifnot(length(labels) == length(has_error))
+      labels = labels[!has_error]
+      #transform_y = transform_y[!has_error]
+    }
 
     data = list(side = 2L, at = transform_y, labels = labels)
     # TODO
@@ -1566,6 +1619,10 @@ plot_sequential = function(
     args = list(side = 2L, at = transform_y, labels = labels) |> c(args)
     data = named_list_rm(data, c("side", "at", "labels"))
     axis_plot_obj = new_pcj_plot_object("axis", args, data)
+
+    # axis_plot_obj should not be able to fail.
+    if (!is.null(axis_plot_obj$error))
+      stop(axis_plot_obj$error)
 
     plots = c(list(axis_plot_obj), plots)
 
@@ -1592,6 +1649,10 @@ plot_sequential = function(
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+
+    # plot_default_obj should not be able to fail.
+    if (!is.null(plot_default_obj$error))
+      stop(plot_default_obj$error)
 
     plots = c(list(plot_default_obj), plots)
   }
