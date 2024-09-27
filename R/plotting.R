@@ -2101,7 +2101,8 @@ list_get2 = function(x, key, default = NULL) {
 
 
 is_xy_density = function(x) {
-  is_list(x) && all(c("x", "y") %in% names(x), na.rm = FALSE)
+  is_list(x) && is_uniquely_named_list(x[c("x", "y")]) &&
+    all(c("x", "y") %in% names(x), na.rm = FALSE)
 }
 
 

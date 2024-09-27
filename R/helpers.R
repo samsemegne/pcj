@@ -6,6 +6,22 @@ is_empty = function(x) {
 }
 
 
+name_count = function(x, name) {
+  stopifnot(exprs = {
+    !is.null(x)
+    vek::is_chr_vec_xb1(name)
+  })
+
+  k = names(x)
+  stopifnot(is.null(k) || vek::is_chr_vec_x(k))
+
+  if (is.null(k) || length(k) == 0L)
+    return(0L)
+  else
+    return(sum(k == name, na.rm = FALSE))
+}
+
+
 valueError = function(message) {
   errorCondition(message, class = "valueError", call = NULL)
 }

@@ -13,7 +13,11 @@ check_stat_result = function(x, label) {
 
   bag = list()
   bag_append = \(..., par_env = parent.frame(1L)) {
-    stopifnot(exists("bag"))
+    stopifnot(exprs = {
+      exists("bag")
+      ...length() > 0L
+    })
+
     par_env$bag = c(par_env$bag, list(...))
   }
 
@@ -47,7 +51,7 @@ check_stat_result = function(x, label) {
       bag_append(typeError(msg))
     }
 
-    if ("density" %in% names(x)) {
+    if (name_count(x, "density") == 1L) {
       if (is.function(x$density)) {
         if (length(formals(x$density)) < 1L) {
           msg = '"%s$density" must have one or more parameters' |>
@@ -67,7 +71,7 @@ check_stat_result = function(x, label) {
       }
     }
 
-    if ("quantile" %in% names(x)) {
+    if (name_count(x, "quantile") == 1L) {
       if (!is.function(x$quantile)) {
         msg = sprintf('"%s$quantile" must be a function', label)
         bag_append(typeError(msg))
@@ -79,7 +83,7 @@ check_stat_result = function(x, label) {
       }
     }
 
-    if ("probability" %in% names(x)) {
+    if (name_count(x, "probability") == 1L) {
       if (!is.function(x$probability)) {
         msg = sprintf('"%s$probability" must be a function', label)
         bag_append(typeError(msg))
@@ -91,46 +95,32 @@ check_stat_result = function(x, label) {
       }
     }
 
-    if ("mean" %in% names(x)) {
-      if (!vek::is_num_vec(x$mean)) {
-        msg = sprintf('"%s$mean" must be a base-R numeric vector', label)
-        bag_append(typeError(msg))
-      }
-      else if (!vek::is_num_vec_xyz1(x$mean)) {
-        msg = sprintf('"%s$mean" must be finite and be of length 1', label)
+    if (name_count(x, "mean") == 1L) {
+      for (cond in check_scalar_stat(x$mean, sprintf("%s$mean", label)))
+        bag_append(cond)
+    }
+
+    if (name_count(x, "median") == 1L) {
+      for (cond in check_scalar_stat(x$median, sprintf("%s$median", label)))
+        bag_append(cond)
+    }
+
+    if (name_count(x, "sd") == 1L) {
+      for (cond in check_scalar_stat(x$sd, sprintf("%s$sd", label)))
+        bag_append(cond)
+
+      if (vek::is_num_vec_xyz1(x$sd) && x$sd < 0L) {
+        msg = sprintf('"%s$sd >= 0" is not TRUE', label)
         bag_append(valueError(msg))
       }
     }
 
-    if ("median" %in% names(x)) {
-      if (!vek::is_num_vec(x$median)) {
-        msg = sprintf('"%s$median" must be a base-R numeric vector', label)
-        bag_append(typeError(msg))
-      }
-      else if (!vek::is_num_vec_xyz1(x$median)) {
-        msg = sprintf('"%s$median" must be finite and be of length 1', label)
-        bag_append(valueError(msg))
-      }
-    }
+    if (name_count(x, "var") == 1L) {
+      for (cond in check_scalar_stat(x$sd, sprintf("%s$var", label)))
+        bag_append(cond)
 
-    if ("sd" %in% names(x)) {
-      if (!vek::is_num_vec(x$sd)) {
-        msg = sprintf('"%s$sd" must be a base-R numeric vector', label)
-        bag_append(typeError(msg))
-      }
-      else if (!vek::is_num_vec_xyz1(x$sd)) {
-        msg = sprintf('"%s$sd" must be finite and be of length 1', label)
-        bag_append(valueError(msg))
-      }
-    }
-
-    if ("var" %in% names(x)) {
-      if (!vek::is_num_vec(x$var)) {
-        msg = sprintf('"%s$var" must be a base-R numeric vector', label)
-        bag_append(typeError(msg))
-      }
-      else if (!vek::is_num_vec_xyz1(x$var)) {
-        msg = sprintf('"%s$var" must be finite and be of length 1', label)
+      if (vek::is_num_vec_xyz1(x$var) && x$var < 0L) {
+        msg = sprintf('"%s$var >= 0" is not TRUE', label)
         bag_append(valueError(msg))
       }
     }
@@ -146,6 +136,27 @@ check_stat_result = function(x, label) {
 }
 
 
+check_scalar_stat = function(x, label) {
+  if (vek::is_num_vec(x)) {
+    if (!vek::is_num_vec_xyz1(x)) {
+      msg = sprintf('"%s" must be finite and be of length 1', label)
+      return(list(valueError(msg)))
+    } else {
+      return(list())
+    }
+  } else if (is.function(x)) {
+    if (length(formals(x)) < 1L) {
+      msg = sprintf('"%s" must have one or more parameters"', label)
+      return(list(typeError(msg)))
+    } else {
+      return(list())
+    }
+  } else {
+    msg = sprintf('"%s must be a base-R numeric vector or a function"', label)
+    return(list(typeError(msg)))
+  }
+}
+
 check_xy_density = function(x, label) {
   stopifnot(vek::is_chr_vec_xb1(label))
 
@@ -155,15 +166,16 @@ check_xy_density = function(x, label) {
     par_env$bag = c(par_env$bag, list(...))
   }
 
-  if (!is_xy_density(x)) {
-    msg = sprintf('"%s" must be a list containing elements "x" and "y"', label)
+  if (!is_list(x)) {
+    msg = sprintf('"%s" must be a list', label)
     bag_append(typeError(msg))
     return(bag)
   }
 
-  if (!is_uniquely_named_list(x)) {
-    msg = sprintf('All names of "%s" must be unique', label)
+  if (!is_xy_density(x)) {
+    msg = sprintf('"%s" must contain elements "x" and "y"', label)
     bag_append(typeError(msg))
+    return(bag)
   }
 
   if (!vek::is_num_vec(x$x)) {
