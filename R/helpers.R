@@ -1,5 +1,11 @@
 
 
+is_empty = function(x) {
+  stopifnot(!is.null(x))
+  return(length(x) == 0L)
+}
+
+
 valueError = function(message) {
   errorCondition(message, class = "valueError", call = NULL)
 }

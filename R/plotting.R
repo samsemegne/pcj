@@ -575,7 +575,7 @@ plot_prior_predictive_ = function(
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
 
   stat_check = check_stat_result(stat_obj, "stat")
-  if (!is.null(stat_check)) {
+  if (!is_empty(stat_check)) {
     meta = list(result = list(stat = stat_obj_, stat_check = stat_check))
 
     return(new_pcj_plot_object(
@@ -920,7 +920,7 @@ plot_posterior_ = function(
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
 
   stat_check = check_stat_result(stat_obj, "stat")
-  if (!is.null(stat_check)) {
+  if (!is_empty(stat_check)) {
     data = list(result = list(stat = stat_obj_, stat_check = stat_check))
 
     return(new_pcj_plot_object(
@@ -2113,7 +2113,7 @@ get_at = function(at, samples, stat) {
   })
 
   tmp = check_stat_result(stat, "stat")
-  if (!is.null(tmp))
+  if (!is_empty(tmp))
     stop(tmp)
   else
     rm(tmp)
