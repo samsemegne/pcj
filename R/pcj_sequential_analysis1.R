@@ -1,5 +1,10 @@
 
 
+is.pcj_sequential_analysis1 = function(object, ...) {
+  is_of_mono_class(object, "pcj_sequential_analysis1")
+}
+
+
 sequential_analysis = function(
     data,
     prior_mu,

@@ -143,7 +143,6 @@ plot_point_prior = function(
     is.pcj_process_capability_jags1(object)
     is.pcj_prior_predictive1(object$prior_study)
     vek::is_chr_vec_xb1(x)
-    #vek::is_num_vec_xyz(transform) # TODO
     x %in% c("mu", "sigma")
   })
 
@@ -291,9 +290,8 @@ plot_prior_ = function(
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object) # TODO or is.pcj_model
-    #vek::is_chr_vec_xb1(x) # TODO
-
-    #vek::is_num_vec_xyz(transform) # TODO
+    is.pcj_prior_predictive1(object$prior_study)
+    vek::is_chr_vec_xb1(x)
     x %in% c("mu", "sigma")
   })
 
@@ -500,12 +498,17 @@ plot_prior_predictive_ = function(
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
     is.pcj_prior_predictive1(object$prior_study)
-    !has_error(object$prior_study)
     vek::is_chr_vec_xb1(x)
-
-    #vek::is_num_vec_xyz(transform) # TODO
     # TODO check x %in% c(...)
   })
+
+
+  if(has_error(object$prior_study)) {
+    meta = list()
+    e = list(simpleError('"object$prior_study" exited with errors'))
+    w = list()
+    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+  }
 
   if (is.null(stat)) {
     stat = gaussian_density
@@ -761,7 +764,9 @@ plot_prior_predictive_ = function(
     stop()
   )
 
-  w = c(get_warning(stat_obj_), get_warning(at_obj))
+  w = c(get_warning(object$prior_study), get_warning(stat_obj_),
+        get_warning(at_obj))
+
   e = list()
   graphics_obj = new_pcj_plot_object(func, args, data, e, w)
 
@@ -822,14 +827,30 @@ plot_posterior_ = function(
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
     vek::is_chr_vec_xb1(x)
-
-    #vek::is_num_vec_xyz(transform) # TODO
     #x %in% c("mu", "sigma") # TODO
   })
 
-  # TODO throw error if model has error
-  #if (is.pcj_model1(object))
-  #  stopifnot(is.null(object$error))
+  if (is.pcj_process_capability_jags1(object)) {
+    stopifnot(is.pcj_sequential_analysis1(object$sequential_analysis))
+
+    last_i = length(object$sequential_analysis$fit)
+    last_fit = object$sequential_analysis$fit[[last_i]]
+    if (has_error(last_fit)) {
+      meta = list()
+      e = list(simpleError('The last model exited with errors'))
+      w = list()
+      return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    }
+  } else if (is.pcj_model1(object)) {
+    if (has_error(object)) {
+      meta = list()
+      e = list(simpleError('The model exited with errors'))
+      w = list()
+      return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    }
+  } else {
+    stop()
+  }
 
   if (is.null(stat))
     stat = gaussian_density
@@ -875,13 +896,7 @@ plot_posterior_ = function(
   if (is.pcj_model1(object)) {
     samples = get_sample.pcj_model1(object, var_name, "all")
   }
-  else if (is.pcj_process_capability_jags1(object) &&
-           !is.null(object$sequential_analysis))
-  {
-    last_i = length(object$sequential_analysis$fit)
-    last_fit = object$sequential_analysis$fit[[last_i]]
-    # TODO the error check
-    #stopifnot(is.null(last_fit$error))
+  else if (is.pcj_process_capability_jags1(object)) {
     samples = last_fit |>
       get_sample.pcj_model1(var_name, "all")
   }
@@ -1109,7 +1124,8 @@ plot_posterior_ = function(
   )
 
   e = list()
-  w = c(get_warning(at_obj), get_warning(stat_obj_))
+  w_ = if (is.pcj_model1(object)) get_warning(object) else get_warning(last_fit)
+  w = c(w_, get_warning(at_obj), get_warning(stat_obj_))
   graphics_obj = new_pcj_plot_object(func, args, data, e, w)
 
   if (add) {
@@ -1167,7 +1183,6 @@ plot_area = function(
   )
 {
   stopifnot(exprs = {
-    # TODO add object checks
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
@@ -1176,15 +1191,6 @@ plot_area = function(
 
   dots = list(...)
   #stopifnot(is_uniquely_named_list(dots))
-
-  # TODO at logic
-  #at = NULL
-  #if ("at" %in% names(dots)) {
-  #  at = dots$at
-  #  stopifnot({
-  #    vek::is_num_vec_xyz(at) || is.null(at)
-  #  })
-  #}
 
   add = FALSE
   if ("add" %in% names(dots)) {
