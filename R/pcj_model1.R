@@ -162,14 +162,44 @@ get_model1_str = function(capability_indices) {
 }
 
 
+get_model1_prior_var_name = function() c("mu", "sigma")
+
+
 get_monitor_var = function() {
-  return(c("mu", "sigma", "p_nonconformance",
-           "p_nonconformance_below", "p_nonconformance_above"))
+  return(c(get_model1_prior_var_name(), get_nonconformance_var_name()))
 }
 
 
 get_supported_pci = function() {
   return(c("C_p", "C_pl", "C_pu", "C_pk", "C_pm"))
+}
+
+
+get_nonconformance_var_name = function() {
+  c("p_nonconformance", "p_nonconformance_below", "p_nonconformance_above")
+}
+
+
+#' @export
+variable.names.pcj_model1 = function(object, distribution) {
+  stopifnot(exprs = {
+    is.pcj_model1(object)
+    is.pci_params(object$result$pci_params)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "posterior")
+  })
+
+  if (distribution == "prior") {
+    return(get_model1_prior_var_name())
+  } else if (distribution == "posterior") {
+    return(c(
+      get_model1_prior_var_name(),
+      object$result$pci_params$capability_indices,
+      get_nonconformance_var_name()
+    ))
+  } else {
+    stop()
+  }
 }
 
 

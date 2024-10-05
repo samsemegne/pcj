@@ -83,3 +83,35 @@ estimate_capability = function(
   return(final_obj)
 }
 
+
+#' @export
+variable.names.pcj_process_capability_jags1 = function(object, distribution) {
+  stopifnot(exprs = {
+    is.pcj_process_capability_jags1(object)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+  })
+
+  if (distribution %in% c("prior", "prior_predictive")) {
+    stopifnot(is.pcj_prior_predictive1(object$prior_study))
+    v = variable.names.pcj_prior_predictive1(object$prior_study, distribution)
+    return(v)
+  } else if (distribution == "posterior") {
+    if (is.pcj_model1(object$pcj_model)) {
+      v = variable.names.pcj_model1(object$pcj_model, distribution)
+      return(v)
+    } else if (is.pcj_sequential_analysis1(object$sequential_analysis)) {
+      last_i = length(object$sequential_analysis$fit)
+      last_model = object$sequential_analysis$fit[[last_i]]
+      stopifnot(is.pcj_model1(last_model))
+      v = variable.names.pcj_model1(last_model, distribution)
+      return(v)
+    } else {
+      stop()
+    }
+  } else {
+    stop()
+  }
+}
+
+

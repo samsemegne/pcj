@@ -97,6 +97,28 @@ get_condition.pcj_prior_predictive1 = get_condition_
 
 
 #' @export
+variable.names.pcj_prior_predictive1 = function(object, distribution) {
+  stopifnot(exprs = {
+    is.pcj_prior_predictive1(object)
+    is.pci_params(object$result$pci_params)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive")
+  })
+
+  if (distribution == "prior") {
+    return(get_model1_prior_var_name())
+  } else if (distribution == "prior_predictive") {
+    return(c(
+      object$result$pci_params$capability_indices,
+      get_nonconformance_var_name()
+    ))
+  } else {
+    stop()
+  }
+}
+
+
+#' @export
 get_sample.pcj_prior_predictive1 = function(object, x) {
   stopifnot(exprs = {
     is.pcj_prior_predictive1(object)
