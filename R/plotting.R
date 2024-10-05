@@ -17,7 +17,7 @@ plot_prior = function(
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
     vek::is_chr_vec_xb1(x)
-    x %in% c("mu", "sigma")
+    x %in% variable.names(object, "prior")
   })
 
   graphics = "lines"
@@ -143,7 +143,7 @@ plot_point_prior = function(
     is.pcj_process_capability_jags1(object)
     is.pcj_prior_predictive1(object$prior_study)
     vek::is_chr_vec_xb1(x)
-    x %in% c("mu", "sigma")
+    x %in% variable.names(object, "prior")
   })
 
   tfm_check = check_transform(transform)
@@ -296,7 +296,7 @@ plot_prior_ = function(
     is.pcj_process_capability_jags1(object) # TODO or is.pcj_model
     is.pcj_prior_predictive1(object$prior_study)
     vek::is_chr_vec_xb1(x)
-    x %in% c("mu", "sigma")
+    x %in% variable.names(object, "prior")
   })
 
   tfm_check = check_transform(transform)
@@ -507,7 +507,7 @@ plot_prior_predictive_ = function(
     is.pcj_process_capability_jags1(object)
     is.pcj_prior_predictive1(object$prior_study)
     vek::is_chr_vec_xb1(x)
-    # TODO check x %in% c(...)
+    x %in% variable.names(object, "prior_predictive")
   })
 
   tfm_check = check_transform(transform)
@@ -838,7 +838,7 @@ plot_posterior_ = function(
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
     vek::is_chr_vec_xb1(x)
-    #x %in% c("mu", "sigma") # TODO
+    x %in% variable.names(object, "posterior")
   })
 
   tfm_check = check_transform(transform)
@@ -1198,6 +1198,7 @@ plot_area = function(
   )
 {
   stopifnot(exprs = {
+    # TODO add checks
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
@@ -1394,6 +1395,7 @@ plot_sequential = function(
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
     vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "posterior")
     #vek::is_num_vec_xyz(at) || is.null(at)
     #is.function(stat) # TODO
     vek::is_int_vec_x1(order)
