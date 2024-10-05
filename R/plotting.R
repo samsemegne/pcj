@@ -1402,8 +1402,6 @@ plot_sequential = function(
     order %in% c(-1L, 1L)
     vek::is_chr_vec_xb(condition_action)
     all(condition_action %in% "omit_error", na.rm = FALSE)
-    # TODO transform
-    # TODO add
   })
 
   # TODO check it's actually sequential object
