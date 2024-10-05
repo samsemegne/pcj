@@ -90,6 +90,12 @@ new_prior_predictive1 = function(
 }
 
 
+get_error.pcj_prior_predictive1 = get_error_
+get_warning.pcj_prior_predictive1 = get_warning_
+get_message.pcj_prior_predictive1 = get_message_
+get_condition.pcj_prior_predictive1 = get_condition_
+
+
 #' @export
 get_sample.pcj_prior_predictive1 = function(object, x) {
   stopifnot(exprs = {

@@ -53,3 +53,6 @@ sequential_analysis = function(
     class = "pcj_sequential_analysis1"
   ))
 }
+
+
+# TODO implement get_error etc

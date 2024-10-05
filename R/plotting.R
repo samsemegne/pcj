@@ -500,7 +500,7 @@ plot_prior_predictive_ = function(
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
     is.pcj_prior_predictive1(object$prior_study)
-    is.null(object$prior_study$error)
+    !has_error(object$prior_study)
     vek::is_chr_vec_xb1(x)
 
     #vek::is_num_vec_xyz(transform) # TODO
@@ -562,14 +562,11 @@ plot_prior_predictive_ = function(
 
   stat_obj_ = pcj_safely(do.call(stat, stat_args))
 
-  if (!is.null(stat_obj_$error)) {
+  if (has_error(stat_obj_)) {
     meta = list(result = list(stat = stat_obj_))
-
-    return(new_pcj_plot_object(
-      NULL, NULL, meta,
-      simpleError('"stat" produced errors'),
-      NULL
-    ))
+    e = get_error(stat_obj_)
+    w = get_warning(stat_obj_)
+    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
@@ -577,12 +574,9 @@ plot_prior_predictive_ = function(
   stat_check = check_stat_result(stat_obj, "stat")
   if (!is_empty(stat_check)) {
     meta = list(result = list(stat = stat_obj_, stat_check = stat_check))
-
-    return(new_pcj_plot_object(
-      NULL, NULL, meta,
-      simpleError('"stat" result is invalid'),
-      NULL
-    ))
+    e = stat_check
+    w = get_warning(stat_obj_)
+    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
   dens_obj = get_stat_density(stat_obj)
@@ -594,14 +588,15 @@ plot_prior_predictive_ = function(
   }
 
   at_obj = get_at(at, samples, stat)
-  if (!is.null(at_obj$error)) {
-    meta = list(result = list(stat = stat_obj_, stat_check = check_stat, at = at_obj))
 
-    return(new_pcj_plot_object(
-      NULL, NULL, meta,
-      simpleError('Failed to obtain "at"'),
-      NULL
+  if (has_error(at_obj)) {
+    meta = list(result = list(
+      stat = stat_obj_, stat_check = check_stat, at = at_obj
     ))
+
+    e = get_error(at_obj)
+    w = c(get_warning(stat_obj_), get_warning(at_obj))
+    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
   at = at_obj$result
@@ -766,7 +761,9 @@ plot_prior_predictive_ = function(
     stop()
   )
 
-  graphics_obj = new_pcj_plot_object(func, args, data) # TODO add warnings if warnings
+  w = c(get_warning(stat_obj_), get_warning(at_obj))
+  e = list()
+  graphics_obj = new_pcj_plot_object(func, args, data, e, w)
 
   if (add) {
     return(graphics_obj)
@@ -804,6 +801,8 @@ plot_prior_predictive_ = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
+
+    # TODO set error/warnings
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
     plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
@@ -909,12 +908,11 @@ plot_posterior_ = function(
 
   stat_obj_ = pcj_safely(do.call(stat, stat_args))
 
-  if (!is.null(stat_obj_$error)) {
-    return(new_pcj_plot_object(
-      NULL, NULL, list(result = list(stat = stat_obj_)),
-      simpleError('"stat" produced errors'),
-      NULL
-    ))
+  if (has_error(stat_obj_)) {
+    meta = list(result = list(stat = stat_obj_))
+    e = get_error(stat_obj_)
+    w = get_warning(stat_obj_)
+    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
   stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
@@ -922,14 +920,10 @@ plot_posterior_ = function(
   stat_check = check_stat_result(stat_obj, "stat")
   if (!is_empty(stat_check)) {
     data = list(result = list(stat = stat_obj_, stat_check = stat_check))
-
-    return(new_pcj_plot_object(
-      NULL, NULL, data,
-      simpleError('"stat" result is invalid'),
-      NULL
-    ))
+    e = stat_check
+    w = get_warning(stat_obj_)
+    return(new_pcj_plot_object(NULL, NULL, data, e, w))
   }
-
 
   at = NULL
   if ("at" %in% names(dots)) {
@@ -938,15 +932,13 @@ plot_posterior_ = function(
   }
 
   at_obj = get_at(at, samples, stat)
-  if (!is.null(at_obj$error)) {
+  if (has_error(at_obj)) {
     data = list(result = list(
       stat = stat_obj_, stat_check = stat_check, at = at_obj))
 
-    return(new_pcj_plot_object(
-      NULL, NULL, data,
-      simpleError('Failed to obtain "at"'),
-      NULL
-    ))
+    e = get_error(at_obj)
+    w = c(get_warning(stat_obj_), get_warning(at_obj))
+    return(new_pcj_plot_object(NULL, NULL, data, e, w))
   }
 
   at = at_obj$result
@@ -1014,7 +1006,7 @@ plot_posterior_ = function(
     stop('Setting "type" to "h" is currently not supported')
 
   if (is.function(dens_obj)) {
-    y_obj = pcj_safely(dens_obj(x)) # TODO check conditions
+    y_obj = pcj_safely(dens_obj(x)) # TODO check condition
     y = y_obj$result
     stopifnot(exprs = {
       vek::is_num_vec_xyz(y)
@@ -1116,7 +1108,9 @@ plot_posterior_ = function(
     stop()
   )
 
-  graphics_obj = new_pcj_plot_object(func, args, data)
+  e = list()
+  w = c(get_warning(at_obj), get_warning(stat_obj_))
+  graphics_obj = new_pcj_plot_object(func, args, data, e, w)
 
   if (add) {
     return(graphics_obj)
@@ -1154,6 +1148,7 @@ plot_posterior_ = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
+    # TODO add error/warnings
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
     plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
@@ -1215,12 +1210,11 @@ plot_area = function(
   )
 
   prior_lines = do.call(func, args)
-  if (!is.null(prior_lines$error)) {
-    return(new_pcj_plot_object(
-      NULL, NULL, prior_lines$result$data,
-      prior_lines$error,
-      prior_lines$warnings
-    ))
+
+  if (has_error(prior_lines)) {
+    e = get_error(prior_lines)
+    w = get_warning(prior_lines)
+    return(new_pcj_plot_object(NULL, NULL, prior_lines$result$data, e, w))
   }
 
   x_ = prior_lines$result$args$x
@@ -1272,7 +1266,9 @@ plot_area = function(
   #}
 
   args = c(list(x = x, y = y), args)
-  polygon_obj = new_pcj_plot_object("polygon", args, data)
+  e = list()
+  w = get_warning(prior_lines)
+  polygon_obj = new_pcj_plot_object("polygon", args, data, e, w)
 
   if (add) {
     return(polygon_obj)
@@ -1310,6 +1306,7 @@ plot_area = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
+    # TODO add error/warnings
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
 
     plot_obj = list(plot_default_obj, polygon_obj)
@@ -1441,7 +1438,7 @@ plot_sequential = function(
     plots[[length(plots) + 1L]] = plt
   }
 
-  has_error = sapply(plots, \(p) return(!is.null(p$error)),
+  has_error = sapply(plots, \(p) has_error(p),
                      simplify = TRUE, USE.NAMES = FALSE)
 
   if ("omit_error" %in% condition_action) {
@@ -1570,10 +1567,10 @@ plot_sequential = function(
       length(p_li) > 0L
     })
 
-    has_pi_li_error = sapply(p_li, \(p) return(!is.null(p$error)),
+    has_p_li_error = sapply(p_li, \(p) has_error(p),
                              simplify = TRUE, USE.NAMES = FALSE)
 
-    return(any(has_pi_li_error, na.rm = FALSE))
+    return(any(has_p_li_error, na.rm = FALSE))
   }, simplify = TRUE, USE.NAMES = FALSE)
 
   # If no error was thrown initially (when obtaining xlim/ylim of each), then
@@ -1620,10 +1617,6 @@ plot_sequential = function(
     data = named_list_rm(data, c("side", "at", "labels"))
     axis_plot_obj = new_pcj_plot_object("axis", args, data)
 
-    # axis_plot_obj should not be able to fail.
-    if (!is.null(axis_plot_obj$error))
-      stop(axis_plot_obj$error)
-
     plots = c(list(axis_plot_obj), plots)
 
 
@@ -1648,11 +1641,8 @@ plot_sequential = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
+    # TODO add error/warnings
     plot_default_obj = new_pcj_plot_object("plot.default", args, data)
-
-    # plot_default_obj should not be able to fail.
-    if (!is.null(plot_default_obj$error))
-      stop(plot_default_obj$error)
 
     plots = c(list(plot_default_obj), plots)
   }
@@ -1708,19 +1698,28 @@ new_pcj_plot_object = function(
     func,
     args,
     data,
-    error = NULL,
-    warnings = NULL
+    error = list(),
+    warnings = list()
   )
 {
   structure(
     list(
-      error = error,
-      warnings = warnings,
+      condition = c(error, warnings),
       result = list(func = func, args = args, data = data)
     ),
     class = "pcj_plot_object"
   )
 }
+
+
+#' @export
+get_error.pcj_plot_object = get_error_
+#' @export
+get_warning.pcj_plot_object = get_warning_
+#' @export
+get_message.pcj_plot_object = get_message_
+#' @export
+get_condition.pcj_plot_object = get_condition_
 
 
 preprocess_pcj_plot_object = function(object) {
@@ -1764,11 +1763,11 @@ preprocess_pcj_plot_object = function(object) {
 plot.pcj_plot_object = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
-  if (!is.null(object$error))
-    stop(object$error)
+  if (has_error(object))
+    stop(get_error(object)[[1L]])
 
-  if (!is.null(object$warnings)) {
-    for (w in object$warnings)
+  if (has_warning(object)) {
+    for (w in get_warning(object))
       warning(w)
   }
 
@@ -2176,21 +2175,16 @@ get_at = function(at, samples, stat) {
 
   tmp = check_stat_result(stat, "stat")
   if (!is_empty(tmp))
-    stop(tmp)
+    stop(tmp[[1L]])
   else
     rm(tmp)
 
   new_pcj_safe_obj = \(k) {
-    obj = list(
-      error = NULL,
-      warnings = NULL,
-      conditions = NULL,
-      outputs = NULL,
+    return(structure(list(
+      condition = list(),
+      output = list(), # TODO is list type?
       result = k
-    )
-
-    stopifnot(is_pcj_safely_obj(obj))
-    return(obj)
+    ), class = "pcj_result"))
   }
 
   if (is.null(at)) {
@@ -2208,7 +2202,7 @@ get_at = function(at, samples, stat) {
     return(at_obj)
   } else if (vek::is_chr_vec_xb(at)) {
     if (length(at) == 0L)
-      return(numeric(0L))
+      return(new_pcj_safe_obj(numeric(0L)))
 
     supported_modes = c("mean", "median", "mean.default", "median.default")
 
@@ -2261,7 +2255,7 @@ get_at = function(at, samples, stat) {
         q = q_obj$result
       }
 
-      if (!is.null(q_obj$error)) {
+      if (has_error(q_obj)) {
         q = rep_len(NaN, length(q_str))
         names(q) = q_str
         results = c(results, list(quantile = q_obj))
@@ -2288,15 +2282,18 @@ get_at = function(at, samples, stat) {
 
         rm(r1, r2)
 
-        if (any(q == q_val, na.rm = FALSE))
+        if (any(q == q_val, na.rm = FALSE)) # TODO check
           e = e %||% valueError('"quantile" results can\'t equal input')
 
-        q_obj$error = e
         if (!is.null(e))
           q = rep_len(NaN, length(q_str))
 
+        tmp = new_pcj_safe_obj(NULL)
+        if (!is.null(e))
+          tmp$condition = list(e)
+
         names(q) = q_str
-        results = c(results, list(quantile = q_obj))
+        results = c(results, list(quantile = q_obj, quantile_check = tmp))
         rm(e)
       }
 
@@ -2359,7 +2356,7 @@ get_at = function(at, samples, stat) {
       names(mode_objects) = mode_str
 
       get_mode = \(k) {
-        if (is_pcj_safely_obj(k)) {
+        if (is.pcj_result(k)) {
           if (is_valid_mode(k$result))
             return(k$result)
           else
@@ -2374,44 +2371,18 @@ get_at = function(at, samples, stat) {
       modes = sapply(mode_objects, get_mode, simplify = TRUE, USE.NAMES = FALSE)
       names(modes) = mode_str
 
-      results = c(results, Filter(is_pcj_safely_obj, mode_objects))
+      results = c(results, Filter(is.pcj_result, mode_objects))
     }
 
     values = c(lit, q, modes)
     # Put the values in the order of "at".
     values = values[at]
 
-    get_smth = \(obj, smth) {
-      stopifnot(exprs = {
-        is_uniquely_named_list(obj)
-        vek::is_chr_vec_xb1(smth)
-      })
-
-      if (length(obj) == 0L)
-        return(NULL)
-
-      tmp = sapply(obj, is_pcj_safely_obj, simplify = TRUE, USE.NAMES = FALSE)
-      stopifnot(all(tmp, na.rm = FALSE))
-
-      has_smth = sapply(obj, \(o) {
-        !is.null(o[[smth]])
-      }, simplify = TRUE, USE.NAMES = FALSE)
-
-      if (!any(has_smth, na.rm = FALSE))
-        return(NULL)
-
-      res = obj[has_smth]
-      names(res) = names(obj)[has_smth]
-      return(res)
-    }
-
-    return(list(
-      error = get_smth(results, "error"), # Null or named list
-      warnings = get_smth(results, "warnings"),
-      conditions = get_smth(results, "conditions"),
-      outputs = get_smth(results, "outputs"),
+    return(structure(list(
+      condition = do.call(c, lapply(results, get_condition)),
+      output = list(), # TODO
       result = values # Named numeric vector
-    ))
+    ), class = "pcj_result"))
   } else {
     stop()
   }

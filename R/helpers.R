@@ -1,5 +1,10 @@
 
 
+sapply_ = function(x, f, ...) {
+  sapply(x, f, ..., simplify = TRUE, USE.NAMES = FALSE)
+}
+
+
 is_empty = function(x) {
   stopifnot(!is.null(x))
   return(length(x) == 0L)
@@ -13,8 +18,6 @@ name_count = function(x, name) {
   })
 
   k = names(x)
-  stopifnot(is.null(k) || vek::is_chr_vec_x(k))
-
   if (is.null(k) || length(k) == 0L)
     return(0L)
   else
@@ -94,7 +97,7 @@ is_list = function(x) {
 
 is_pcj_safely_obj = function(x) {
   is_uniquely_named_list(x) &&
-    all(names(x) %in% c("error", "warnings", "conditions", "outputs", "result"),
+    all(names(x) %in% c("condition", "output", "result"),
         na.rm = FALSE)
 }
 
@@ -159,50 +162,23 @@ get_rjags_rng_kinds = function() {
 }
 
 
-pcj_safely = function(expr) {
-  warnings_ = list()
-  error_ = NULL
-  other = list()
-  conditions = list()
-  result = NULL
+get_error_ = function(object, ...) {
+  Filter(\(x) inherits(x, "error", FALSE), object$condition)
+}
 
-  result = withCallingHandlers({
-    tryCatch({
-      expr
-    }, error = \(e) {
-      error_ <<- e
-    })
-  }, condition = \(cond) {
-    conditions[[length(conditions) + 1L]] <<- cond
-  })
 
-  out = list()
-  #out = utils::capture.output({
-  #}, file = NULL, append = FALSE, type = "output", split = FALSE)
+get_warning_ = function(object, ...) {
+  Filter(\(x) inherits(x, "warning", FALSE), object$condition)
+}
 
-  #out = trimws(out, which = "both", whitespace = "[ \t\r\n]")
-  #out = out[out != ""] |>
-  #  as.list()
 
-  warnings_ = Filter(\(k) inherits(k, "warning", FALSE), conditions)
-  other = Filter(\(k) !inherits(k, "warning", FALSE), conditions)
+get_message_ = function(object, ...) {
+  Filter(\(x) inherits(x, "message", FALSE), object$condition)
+}
 
-  if (length(warnings_) == 0L)
-    warnings_ = NULL
 
-  if (!is.null(error_))
-    result = NULL
-
-  if (length(other) == 0L)
-    other = NULL
-
-  return(list(
-    error = error_,
-    warnings = warnings_,
-    conditions = other,
-    outputs = out,
-    result = result
-  ))
+get_condition_ = function(object, ...) {
+  return(object$condition)
 }
 
 
@@ -384,9 +360,4 @@ bqc__norm__prob <- function(mu, sigma, a, b) {
   #})
 
   return(prob)
-}
-
-
-new_runtime_error = function(message) {
-  return(errorCondition(message = message, class = "runtimeError", call = NULL))
 }

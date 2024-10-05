@@ -91,7 +91,7 @@ new_pcj_model1 = function(
     r_version = R.version$version.string
   )
 
-  if (is.null(obj$error))
+  if (!has_error(obj))
     obj$result = c(obj$result, content)
   else
     obj$result = c(list(data = data), content) # TODO
@@ -100,6 +100,16 @@ new_pcj_model1 = function(
 
   return(obj)
 }
+
+
+#' @export
+get_error.pcj_model1 = get_error_
+#' @export
+get_warning.pcj_model1 = get_warning_
+#' @export
+get_message.pcj_model1 = get_message_
+#' @export
+get_condition.pcj_model1 = get_condition_
 
 
 get_model1_str = function(capability_indices) {
@@ -207,16 +217,20 @@ summary.pcj_model1 = function(object) {
   x = summary(object$result$samples)
 
   stats_df = as.data.frame(x$statistics) # TODO defaults
-  stats_df = cbind(param = row.names(stats_df), stats_df)
+  stats_df = cbind(x = row.names(stats_df), stats_df)
 
   q_df = as.data.frame(x$quantiles)
   colnames(q_df) = gsub("%", "", colnames(q_df))
-  colnames(q_df) = paste0("q", colnames(q_df), collapse = NULL,
-                          recycle0 = FALSE)
+  q = as.numeric(colnames(q_df)) * .01
+  q = as.character(q)
+  q = sub("0\\.", "\\.", q)
+  colnames(q_df) = paste0("q", q, collapse = NULL, recycle0 = FALSE)
 
 
   df = cbind(stats_df, q_df)
   colnames(df) = gsub("-|\\s+|^$", "_", colnames(df)) |> tolower()
+  df = subset.data.frame(df, select = -c(naive_se, time_series_se))
+
   return(df)
 }
 
