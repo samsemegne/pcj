@@ -1397,8 +1397,6 @@ plot_sequential = function(
     is.pcj_sequential_analysis1(object$sequential_study)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
-    #vek::is_num_vec_xyz(at) || is.null(at)
-    #is.function(stat) # TODO
     vek::is_int_vec_x1(draw_order)
     draw_order %in% c(-1L, 1L)
     vek::is_chr_vec_xb(condition_action)
@@ -1408,6 +1406,15 @@ plot_sequential = function(
   tfm_check = check_transform(transform)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
+
+  if (is.null(stat))
+    stat = gaussian_density
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
 
   dots = list(...)
   if (length(dots) > 0L)
