@@ -1386,7 +1386,7 @@ plot_sequential = function(
     x = NULL,
     show_prior = TRUE,
     position = "stack",
-    order = -1L,
+    draw_order = -1L,
     condition_action = "omit_error",
     stat = NULL,
     transform = list()
@@ -1394,17 +1394,17 @@ plot_sequential = function(
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
+    is.pcj_sequential_analysis1(object$sequential_study)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
     #vek::is_num_vec_xyz(at) || is.null(at)
     #is.function(stat) # TODO
-    vek::is_int_vec_x1(order)
-    order %in% c(-1L, 1L)
+    vek::is_int_vec_x1(draw_order)
+    draw_order %in% c(-1L, 1L)
     vek::is_chr_vec_xb(condition_action)
     all(condition_action %in% "omit_error", na.rm = FALSE)
   })
 
-  # TODO check it's actually sequential object
   tfm_check = check_transform(transform)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
@@ -1609,7 +1609,7 @@ plot_sequential = function(
     stop('One or more of the sequential plots produced an unexpected error')
   }
 
-  if (order == -1L)
+  if (draw_order == -1L)
     plots = rev(plots)
 
   plots = unlist(plots, recursive = FALSE, use.names = FALSE)
