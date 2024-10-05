@@ -146,6 +146,10 @@ plot_point_prior = function(
     x %in% c("mu", "sigma")
   })
 
+  tfm_check = check_transform(transform)
+  if (!is_empty(tfm_check))
+    stop(tfm_check[[1L]])
+
   graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
@@ -294,6 +298,10 @@ plot_prior_ = function(
     vek::is_chr_vec_xb1(x)
     x %in% c("mu", "sigma")
   })
+
+  tfm_check = check_transform(transform)
+  if (!is_empty(tfm_check))
+    stop(tfm_check[[1L]])
 
   graphics = "lines"
   if (...length() > 0L)
@@ -502,6 +510,9 @@ plot_prior_predictive_ = function(
     # TODO check x %in% c(...)
   })
 
+  tfm_check = check_transform(transform)
+  if (!is_empty(tfm_check))
+    stop(tfm_check[[1L]])
 
   if(has_error(object$prior_study)) {
     meta = list()
@@ -829,6 +840,10 @@ plot_posterior_ = function(
     vek::is_chr_vec_xb1(x)
     #x %in% c("mu", "sigma") # TODO
   })
+
+  tfm_check = check_transform(transform)
+  if (!is_empty(tfm_check))
+    stop(tfm_check[[1L]])
 
   if (is.pcj_process_capability_jags1(object)) {
     stopifnot(is.pcj_sequential_analysis1(object$sequential_analysis))
@@ -1186,8 +1201,11 @@ plot_area = function(
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
-
   })
+
+  tfm_check = check_transform(transform)
+  if (!is_empty(tfm_check))
+    stop(tfm_check[[1L]])
 
   dots = list(...)
   #stopifnot(is_uniquely_named_list(dots))
@@ -1387,6 +1405,9 @@ plot_sequential = function(
   })
 
   # TODO check it's actually sequential object
+  tfm_check = check_transform(transform)
+  if (!is_empty(tfm_check))
+    stop(tfm_check[[1L]])
 
   dots = list(...)
   if (length(dots) > 0L)
@@ -2424,5 +2445,57 @@ check_lim = function(x, label) {
   }
 
   return(invisible(NULL))
+}
+
+
+check_transform = function(x, label = "transform") {
+  stopifnot(exprs = {
+    vek::is_chr_vec_xb1(label)
+  })
+
+  bag = list()
+
+  if (!is_list(x)) {
+    msg = sprintf('"%s" must be a list', label)
+    bag = c(bag, list(typeError(msg)))
+    return(bag)
+  }
+
+  if (length(x) == 0L) {
+    return(bag)
+  }
+  else if (length(x) == 1L) {
+    if (!("offset" %in% names(x))) {
+      msg = sprintf('"%s" must contain supported transforms', label)
+      bag = c(bag, list(valueError(msg)))
+      return(bag)
+    }
+
+    if (!vek::is_num_vec(x$offset)) {
+      msg = sprintf('"%s$offset" must be a base-R numeric vector', label)
+      bag = c(bag, list(valueError(msg)))
+      return(bag)
+    }
+
+    if (length(x$offset) != 2L) {
+      msg = sprintf('"%s$offset" must be of length 2', label)
+      bag = c(bag, list(valueError(msg)))
+      return(bag)
+    }
+
+    if (!vek::is_num_vec_xyz(x$offset)) {
+      msg = sprintf('"%s$offset" must be finite', label)
+      bag = c(bag, list(valueError(msg)))
+      return(bag)
+    }
+
+    return(bag)
+  } else if (length(x) > 1L) {
+    msg = sprintf('"%s" may currently only contain one transform', label)
+    bag = c(bag, list(valueError(msg)))
+    return(bag)
+  } else {
+    stop()
+  }
 }
 
