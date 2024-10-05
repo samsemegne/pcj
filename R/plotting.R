@@ -522,7 +522,7 @@ plot_prior_predictive_ = function(
   }
 
   if (is.null(stat)) {
-    stat = gaussian_density
+    stat = default_stats
   } else {
     stopifnot(exprs = {
       !is.object(stat)
@@ -655,8 +655,14 @@ plot_prior_predictive_ = function(
   } else {
     if (is.function(stat_obj))
       xlim = range(samples, na.rm = TRUE)
-    else
+    else if (is.function(stat_obj$density))
+      xlim = range(samples, na.rm = TRUE)
+    else if (is_xy_density(stat_obj))
       xlim = range(stat_obj$x, na.rm = TRUE)
+    else if (is_xy_density(stat_obj$density))
+      xlim = range(stat_obj$density$x, na.rm = TRUE)
+    else
+      stop()
   }
 
   tmp = check_lim(xlim, "x")
@@ -868,7 +874,7 @@ plot_posterior_ = function(
   }
 
   if (is.null(stat))
-    stat = gaussian_density
+    stat = default_stats
 
   stopifnot(exprs = {
     !is.object(stat)
@@ -942,6 +948,7 @@ plot_posterior_ = function(
     meta = list(result = list(stat = stat_obj_))
     e = get_error(stat_obj_)
     w = get_warning(stat_obj_)
+    browser()
     return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
@@ -952,6 +959,7 @@ plot_posterior_ = function(
     data = list(result = list(stat = stat_obj_, stat_check = stat_check))
     e = stat_check
     w = get_warning(stat_obj_)
+    browser()
     return(new_pcj_plot_object(NULL, NULL, data, e, w))
   }
 
@@ -996,13 +1004,18 @@ plot_posterior_ = function(
 
   dens_obj = get_stat_density(stat_obj)
 
+  xlim = NULL
   if ("xlim" %in% names(dots) && !is.null(dots$xlim)) {
     xlim = dots$xlim
   } else {
-    if (is.function(dens_obj))
+    if (is.function(stat_obj))
       xlim = range(samples, na.rm = TRUE)
-    else if (is_xy_density(dens_obj))
-      xlim = range(dens_obj$x, na.rm = TRUE)
+    else if (is.function(stat_obj$density))
+      xlim = range(samples, na.rm = TRUE)
+    else if (is_xy_density(stat_obj))
+      xlim = range(stat_obj$x, na.rm = TRUE)
+    else if (is_xy_density(stat_obj$density))
+      xlim = range(stat_obj$density$x, na.rm = TRUE)
     else
       stop()
   }
@@ -1411,7 +1424,7 @@ plot_sequential = function(
     stop(tfm_check[[1L]])
 
   if (is.null(stat))
-    stat = gaussian_density
+    stat = default_stats
 
   stopifnot(exprs = {
     !is.object(stat)
@@ -1886,23 +1899,6 @@ get_var_lab = function(var_name) {
   else {
     return(str2expression(pci::pci_info[var_name, "name_r_expr"]))
   }
-}
-
-
-gaussian_density = function(x, ...) {
-  # Intentionally left missing: width, from, to
-  # TODO handle warnings?
-  # TODO use pairlist for explicit missing args?
-  result = stats::density.default(
-    x, bw = "nrd0", adjust = 1, kernel = "gaussian", weights = NULL,
-    window = kernel, give.Rkern = FALSE, subdensity = FALSE,
-    warnWbw = var(weights) > 0, n = 512, cut = 3, ext = 4,
-    old.coords = FALSE, na.rm = FALSE
-  )
-
-  attr(result, "is_left_tail_zero") = TRUE
-  attr(result, "is_right_tail_zero") = TRUE
-  return(result)
 }
 
 

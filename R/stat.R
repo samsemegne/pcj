@@ -61,7 +61,8 @@ check_stat_result = function(x, label) {
         }
       } else if (is_xy_density(x$density)) { # TODO unclass first?
         tmp = check_xy_density(x$density, sprintf("%s$density", label))
-        bag_append(tmp)
+        for (cond in tmp)
+          bag_append(cond)
       } else {
         msg = paste0_('"%s$density" must be a function or list containing ',
                       'elements "x" and "y"') |>
@@ -234,4 +235,57 @@ get_stat_density = function(x) {
     return(x$density)
   else
     stop()
+}
+
+
+gaussian_density = function(x, ...) {
+  # Intentionally left missing: width, from, to
+  args = alist(
+    x, bw = "nrd0", adjust = 1, kernel = "gaussian", weights = NULL,
+    window = kernel, width =, give.Rkern = FALSE, subdensity = FALSE,
+    warnWbw = var(weights) > 0, n = 512, from =, cut = 3, ext = 4,
+    old.coords = FALSE, na.rm = FALSE
+  )
+
+  dens_obj = do.call(stats::density.default, args)
+
+  attr(dens_obj, "is_left_tail_zero") = TRUE
+  attr(dens_obj, "is_right_tail_zero") = TRUE
+  return(dens_obj)
+}
+
+
+# TODO case length(x) == 0
+sample_proportion = function(x, q, ...) {
+  stopifnot(exprs = {
+    vek::is_num_vec_xyz(x)
+    vek::is_num_vec(q)
+  })
+
+  prop = sapply_(q, \(k) {
+    return(sum(k <= x, na.rm = FALSE) / length(x))
+  })
+
+  stopifnot(exprs = {
+    vek::is_num_vec_xyz(prop)
+    all(prop >= 0L, na.rm = FALSE)
+    all(prop <= 1L, na.rm = FALSE)
+  })
+
+  return(prop)
+}
+
+
+default_stats = function(x, ...) {
+  dens_obj = gaussian_density(x, ...)
+
+  list(
+    density = dens_obj,
+    mean = \(k) mean.default(k, trim = 0, na.rm = FALSE),
+    median = \(k) stats::median.default(k, na.rm = FALSE),
+    sd = \(k) stats::sd(k, na.rm = FALSE),
+    var = \(k) stats::var(k, y = NULL, na.rm = FALSE, use = "everything"),
+    quantile = stats::quantile,
+    probability = sample_proportion
+  )
 }
