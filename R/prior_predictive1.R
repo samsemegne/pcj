@@ -82,11 +82,14 @@ new_prior_predictive1 = function(
   }
 
   obj = pcj_safely(f())
+  class(obj) = NULL
 
-  return(structure(
-    obj,
-    class = "pcj_prior_predictive1"
-  ))
+  obj = as.environment(obj)
+  class(obj) = "pcj_prior_predictive1"
+
+  lockEnvironment(obj, bindings = TRUE)
+
+  return(obj)
 }
 
 

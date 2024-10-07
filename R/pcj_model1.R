@@ -96,7 +96,11 @@ new_pcj_model1 = function(
   else
     obj$result = c(list(data = data), content) # TODO
 
+  obj = as.environment(obj)
+
   class(obj) = c("pcj_model1")
+
+  lockEnvironment(obj, bindings = TRUE)
 
   return(obj)
 }

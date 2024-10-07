@@ -50,13 +50,15 @@ sequential_analysis = function(
     result[[length(result) + 1L]] = obj
   }
 
-  return(structure(
-    list(
-      fit = result,
-      sequential_params = sequential_params
-    ),
-    class = "pcj_sequential_analysis1"
-  ))
+  obj = new.env(TRUE, parent.frame(1L), NA)
+  obj$fit = result
+  obj$sequential_params = sequential_params
+
+  class(obj) = "pcj_sequential_analysis1"
+
+  lockEnvironment(obj, bindings = TRUE)
+
+  return(obj)
 }
 
 
