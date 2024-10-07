@@ -72,13 +72,14 @@ estimate_capability = function(
     )
   }
 
-  final_obj = list(
-    prior_study = prior_study_obj,
-    pcj_model1 = pcj_model1,
-    sequential_analysis = sequential
-  )
+  final_obj = new.env(hash = TRUE, parent = parent.frame(1L), size = NA)
+  final_obj$prior_study = prior_study_obj
+  final_obj$pcj_model1 = pcj_model1
+  final_obj$sequential_analysis = sequential
 
   class(final_obj) = "pcj_process_capability_jags1"
+
+  lockEnvironment(final_obj, bindings = TRUE)
 
   return(final_obj)
 }
