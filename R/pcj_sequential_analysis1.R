@@ -62,4 +62,58 @@ sequential_analysis = function(
 }
 
 
+#' @export
+summary.pcj_sequential_analysis1 = function(object, ...) {
+
+  results = lapply(object$fit, summary)
+
+  dfs = lapply(results, \(k) return(k$result))
+  df = do.call(rbind.data.frame, dfs)
+  row.names(df) = 1:nrow(df)
+
+  cond_ = lapply(results, get_condition)
+  cond = list()
+  for (k in cond_)
+    cond = c(cond, k)
+
+  res = list(
+    condition = cond,
+    output = list(),
+    result = df
+  )
+
+  class(res) = "pcj_sequential_analysis1_summary"
+
+  return(res)
+}
+
+
+#' @export
+get_error.pcj_sequential_analysis1_summary = get_error_
+#' @export
+get_warning.pcj_sequential_analysis1_summary = get_warning_
+#' @export
+get_message.pcj_sequential_analysis1_summary = get_message_
+#' @export
+get_condition.pcj_sequential_analysis1_summary = get_condition_
+
+
+#' @export
+print.pcj_sequential_analysis1_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_sequential_analysis1_summary"))
+
+  if (has_error(object))
+    stop(get_error(object)[[1L]])
+
+  if (has_warning(object)) {
+    for (w in get_warning(object))
+      warning(w)
+  }
+
+  print.data.frame(object$result, ...)
+
+  return(invisible(object))
+}
+
+
 # TODO implement get_error etc

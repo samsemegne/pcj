@@ -513,3 +513,63 @@ get_at = function(at, samples, stat) {
   }
 }
 
+
+obtain_stat_sd = function(samples, stat_result) {
+  stopifnot(vek::is_num_vec_xyz(samples))
+
+  stat_check = check_stat_result(stat_result, "stat")
+  if (!is_empty(stat_check)) {
+    stop(stat_check[[1L]])
+  }
+
+  check_sd = \(k) {
+    if (!vek::is_num_vec(k)) {
+      msg = 'sd must be a base-R numeric vector'
+      return(list(typeError(msg)))
+    } else if (!vek::is_num_vec_xyz1(k)) {
+      msg = 'sd must be finite and be of length 1'
+      return(list(valueError(msg)))
+    } else if (k < 0L) {
+      msg = 'sd >= 0 is not TRUE'
+      return(list(valueError(msg)))
+    } else {
+      return(list())
+    }
+  }
+
+  if (is.function(stat_result)) {
+    stop()
+  } else if (is_xy_density(stat_result)) {
+    stop()
+  } else if (is_list(stat_result)) {
+    if (!("sd" %in% names(stat_result)))
+      stop()
+
+    if (is.function(stat_result$sd)) {
+      f = stat_result$sd
+      sd_result = pcj_safely(f(samples))
+      sd_check = check_sd(sd_result$result)
+      if (is_empty(sd_check))
+        return(sd_result) # TODO should include stat_obj_ conditions
+
+      sd_result$result = NaN
+      sd_result$condition = c(sd_result$condition, sd_check)
+      return(sd_result)
+    } else if (vek::is_num_vec(stat_result$sd)) {
+      # The stat_result$sd value is not checked here, since it's a value, it has
+      # already been checked by check_stat_result().
+      sd_result = structure(list(
+          condition = list(), # TODO should include stat_obj_ conditions
+          output = list(),
+          result = stat_result$sd
+      ), class = "pcj_result")
+
+      return(sd_result)
+    } else {
+      stop()
+    }
+  } else {
+    stop()
+  }
+}
+

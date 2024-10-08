@@ -244,28 +244,91 @@ get_sample.pcj_model1 = function(object, x, chain) {
 }
 
 
+# Currently, statistics are obtained using JAGS (coda::mcmc_list specifically),
+# however 'stat' will be used later for consistency and extensibility.
 #' @export
 summary.pcj_model1 = function(object) {
   stopifnot(is.pcj_model1(object))
 
-  x = summary(object$result$samples)
+  cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5", "q.75",
+           "q.975")
 
-  stats_df = as.data.frame(x$statistics) # TODO defaults
-  stats_df = cbind(x = row.names(stats_df), stats_df)
+  f = function() {
+    x = summary(object$result$samples)
 
-  q_df = as.data.frame(x$quantiles)
-  colnames(q_df) = gsub("%", "", colnames(q_df))
-  q = as.numeric(colnames(q_df)) * .01
-  q = as.character(q)
-  q = sub("0\\.", "\\.", q)
-  colnames(q_df) = paste0("q", q, collapse = NULL, recycle0 = FALSE)
+    stats_df = as.data.frame(x$statistics) # TODO defaults
+    stats_df = cbind(x = row.names(stats_df), stats_df)
+
+    q_df = as.data.frame(x$quantiles)
+    colnames(q_df) = gsub("%", "", colnames(q_df))
+    q = as.numeric(colnames(q_df)) * .01
+    q = as.character(q)
+    q = sub("0\\.", "\\.", q)
+    colnames(q_df) = paste0("q", q, collapse = NULL, recycle0 = FALSE)
 
 
-  df = cbind(stats_df, q_df)
-  colnames(df) = gsub("-|\\s+|^$", "_", colnames(df)) |> tolower()
-  df = subset.data.frame(df, select = -c(naive_se, time_series_se))
+    df = cbind(stats_df, q_df)
+    colnames(df) = gsub("-|\\s+|^$", "_", colnames(df)) |> tolower()
+    row.names(df) = 1:nrow(df)
+    df = subset.data.frame(df, select = -c(naive_se, time_series_se))
 
-  return(df)
+    df$distribution = "posterior"
+
+    df = subset.data.frame(df, select = cols)
+    stopifnot(all(colnames(df) == cols, na.rm = FALSE))
+
+    return(df)
+  }
+
+  if (!has_error(object)) {
+    res = pcj_safely(f())
+    res$condition = c(res$condition, get_condition(object))
+  } else {
+    var_names = variable.names(object, "posterior")
+    df = matrix(NaN, nrow = length(var_names), ncol = length(cols)) |>
+      as.data.frame()
+
+    colnames(df) = cols
+    df$x = var_names
+    df$distribution = "posterior"
+
+    res = list(
+      condition = get_condition(object),
+      output = list(),
+      result = df
+    )
+  }
+
+  class(res) = "pcj_model1_summary"
+  return(res)
+}
+
+
+#' @export
+get_error.pcj_model1_summary = get_error_
+#' @export
+get_warning.pcj_model1_summary = get_warning_
+#' @export
+get_message.pcj_model1_summary = get_message_
+#' @export
+get_condition.pcj_model1_summary = get_condition_
+
+
+#' @export
+print.pcj_model1_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_model1_summary"))
+
+  if (has_error(object))
+    stop(get_error(object)[[1L]])
+
+  if (has_warning(object)) {
+    for (w in get_warning(object))
+      warning(w)
+  }
+
+  print.data.frame(object$result, ...)
+
+  return(invisible(object))
 }
 
 

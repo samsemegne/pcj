@@ -116,3 +116,71 @@ variable.names.pcj_process_capability_jags1 = function(object, distribution) {
 }
 
 
+# TODO add data sample size column
+#' @export
+summary.pcj_process_capability_jags1 = function(object) {
+  stopifnot(is.pcj_process_capability_jags1(object))
+
+  o1 = summary(object$prior_study)
+
+  if (is.pcj_model1(object$pcj_model1)) {
+    o2 = summary(object$pcj_model1)
+  }
+  else if (is.pcj_sequential_analysis1(object$sequential_analysis)) {
+    o2 = summary(object$sequential_analysis)
+  } else if (is.null(object$pcj_model1) &&
+             is.null(object$sequential_analysis))
+  {
+    o2 = NULL
+  }
+  else {
+    stop()
+  }
+
+  if (is.null(o2))
+    df = o1$result
+  else
+    df = rbind.data.frame(o1$result, o2$result)
+
+  cond_ = get_condition(o1)
+  if (!is.null(o2))
+    cond_ = c(cond_, get_condition(o2))
+
+  res = list(
+    condition = cond_,
+    output = list(),
+    result = df
+  )
+
+  class(res) = "pcj_process_capability_jags1_summary"
+  return(res)
+}
+
+
+#' @export
+get_error.pcj_process_capability_jags1_summary = get_error_
+#' @export
+get_warning.pcj_process_capability_jags1_summary = get_warning_
+#' @export
+get_message.pcj_process_capability_jags1_summary = get_message_
+#' @export
+get_condition.pcj_process_capability_jags1_summary = get_condition_
+
+
+#' @export
+print.pcj_process_capability_jags1_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_process_capability_jags1_summary"))
+
+  if (has_error(object))
+    stop(get_error(object)[[1L]])
+
+  if (has_warning(object)) {
+    for (w in get_warning(object))
+      warning(w)
+  }
+
+  print.data.frame(object$result, ...)
+
+  return(invisible(object))
+}
+

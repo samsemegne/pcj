@@ -122,6 +122,147 @@ variable.names.pcj_prior_predictive1 = function(object, distribution) {
 
 
 #' @export
+summary.pcj_prior_predictive1 = function(object, stat = NULL) {
+  stopifnot(is.pcj_prior_predictive1(object))
+
+  var_name = variable.names(object, "prior_predictive")
+
+  if (is.null(stat))
+    stat = default_stats
+
+  if (has_error(object)) {
+    cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5",
+             "q.75", "q.975")
+
+    var_name = variable.names(object, "prior_predictive")
+
+    df = matrix(NaN, nrow = length(var_name), ncol = length(cols))
+    colnames(df) = cols
+    df$x = var_name
+    df$distribution = "prior_predictive"
+
+    res = list(
+      condition = get_condition(object),
+      output = list(),
+      result = df
+    )
+
+    class(res) = "pcj_prior_predictive1_summary"
+    return(res)
+  }
+
+  res = lapply(var_name, \(x) {
+    samples = get_sample(object, x)
+
+    stat_res_ = pcj_safely(default_stats(samples))
+    stat_res = recursive_unclass(stat_res_$result, 5L) # TODO
+    stat_check = check_stat_result(stat_res, "stat")
+
+    at = c("mean", "q.025", "q.25", "q.5", "q.75", "q.975")
+    if (is_empty(stat_check)) {
+      at_res = get_at(at, samples, stat_res)
+      sd_res = obtain_stat_sd(samples, stat_res)
+    } else {
+      cond = list(simpleError("Invalid stat result"))
+      val = rep_len(NaN, length(at))
+      names(val) = at
+
+      at_res = structure(list(
+        condition = cond,
+        output = list(),
+        result = val
+      ), class = "pcj_result")
+
+      sd_res = structure(list(
+        condition = cond,
+        output = list(),
+        result = NaN
+      ), class = "pcj_result")
+    }
+
+    return(list(
+      x = x,
+      at = at_res,
+      sd = sd_res,
+      stat = stat_res_,
+      stat_check = stat_check
+    ))
+  })
+
+  df_rows = lapply(res, \(k) {
+    at = k$at$result
+    return(new_df(
+      x = k$x,
+      distribution = "prior_predictive",
+      mean =  at["mean"],
+      sd =    k$sd$result,
+      q.025 = at["q.025"],
+      q.25 =  at["q.25"],
+      q.5 =   at["q.5"],
+      q.75 =  at["q.75"],
+      q.975 = at["q.975"]
+    ))
+  })
+
+  df = do.call(rbind.data.frame, df_rows) # TODO rbind.data.frame set params
+  row.names(df) = 1:nrow(df)
+
+  cond_ = lapply(res, \(k) {
+    return(c(
+      get_condition(k$at),
+      get_condition(k$sd),
+      get_condition(k$stat),
+      k$stat_check
+    ))
+  })
+
+  cond = list()
+  for (k in cond_)
+    cond = c(cond, k)
+
+  cond = c(get_condition(object), cond)
+
+  summary_obj = list(
+    condition = cond,
+    output = list(),
+    result = df
+  )
+
+  class(summary_obj) = "pcj_prior_predictive1_summary"
+
+  return(summary_obj)
+}
+
+
+#' @export
+get_error.pcj_prior_predictive1_summary = get_error_
+#' @export
+get_warning.pcj_prior_predictive1_summary = get_warning_
+#' @export
+get_message.pcj_prior_predictive1_summary = get_message_
+#' @export
+get_condition.pcj_prior_predictive1_summary = get_condition_
+
+
+#' @export
+print.pcj_prior_predictive1_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_prior_predictive1_summary"))
+
+  if (has_error(object))
+    stop(get_error(object)[[1L]])
+
+  if (has_warning(object)) {
+    for (w in get_warning(object))
+      warning(w)
+  }
+
+  print.data.frame(object$result, ...)
+
+  return(invisible(object))
+}
+
+
+#' @export
 get_sample.pcj_prior_predictive1 = function(object, x) {
   stopifnot(exprs = {
     is.pcj_prior_predictive1(object)
