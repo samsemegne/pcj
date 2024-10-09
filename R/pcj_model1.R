@@ -352,6 +352,30 @@ store_prior = function(x) {
 }
 
 
+#' @export
+probability.pcj_model1 = function(object, q, x, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_model1(object)
+    vek::is_num_vec(q)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "posterior")
+  })
+
+  if (is.null(stat))
+    stat = default_stats
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
+
+  samples = get_sample(object, x, "all")
+
+  return(stat_probability(samples, q, stat))
+}
+
+
 ## TODO
 ##' @export
 #mean.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {

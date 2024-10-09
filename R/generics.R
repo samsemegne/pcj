@@ -33,3 +33,6 @@ has_warning = function(object, ...) {
   return(!is_empty(e))
 }
 
+
+#' @export
+probability = function(object, ...) UseMethod("probability")

@@ -93,9 +93,13 @@ new_prior_predictive1 = function(
 }
 
 
+#' @export
 get_error.pcj_prior_predictive1 = get_error_
+#' @export
 get_warning.pcj_prior_predictive1 = get_warning_
+#' @export
 get_message.pcj_prior_predictive1 = get_message_
+#' @export
 get_condition.pcj_prior_predictive1 = get_condition_
 
 
@@ -273,29 +277,26 @@ get_sample.pcj_prior_predictive1 = function(object, x) {
 }
 
 
-#prior_interval_inference = function() {
-#  table22 = bqc__bqc_six_sigma1_bayestools_jags__new_empty_interval_prob_table()
-#  if (!is.null(interval)) {
-#    interval_inference = bqc__bqc_six_sigma1_bayestools_jags__prior_predictive_interval_prob(
-#      interval, prior_predictive_sample)
-#
-#    table22 = bqc_map_by_name(
-#      x = list(mu = prior_mu, sigma = prior_sigma),
-#      y = interval$obj,
-#      \(x, y, id) {
-#        data.frame(
-#          name = id,
-#          prob = bqc__bayestools__prior_interval_prob(x, y),
-#          lower = y$a,
-#          upper = y$b,
-#          method = "BayesTools",
-#          sample_size = 0L
-#        )
-#      }) |>
-#      bqc__df__list_row_bind()
-#
-#    interval_inference = rbind(interval_inference, table22)
-#    interval_inference$sample_size = 0L
-#    table22 = interval_inference
-#  }
-#}
+#' @export
+probability.pcj_prior_predictive1 = function(object, q, x, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_prior_predictive1(object)
+    vek::is_num_vec(q)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior_predictive")
+  })
+
+  if (is.null(stat))
+    stat = default_stats
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
+
+  samples = get_sample(object, x)
+
+  return(stat_probability(samples, q, stat))
+}
+

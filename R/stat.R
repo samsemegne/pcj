@@ -256,20 +256,25 @@ gaussian_density = function(x, ...) {
 
 
 # TODO case length(x) == 0
-sample_proportion = function(x, q, ...) {
+sample_proportion = function(x, q) {
   stopifnot(exprs = {
     vek::is_num_vec_xyz(x)
     vek::is_num_vec(q)
   })
 
+  names(q) = NULL
+
   prop = sapply_(q, \(k) {
-    return(sum(k <= x, na.rm = FALSE) / length(x))
+    if (is.na(k))
+      return(k)
+    else
+      return(sum(x <= k, na.rm = FALSE) / length(x))
   })
 
   stopifnot(exprs = {
-    vek::is_num_vec_xyz(prop)
-    all(prop >= 0L, na.rm = FALSE)
-    all(prop <= 1L, na.rm = FALSE)
+    vek::is_num_vec_z(prop)
+    all(prop >= 0L, na.rm = TRUE)
+    all(prop <= 1L, na.rm = TRUE)
   })
 
   return(prop)
@@ -286,7 +291,7 @@ default_stats = function(x, ...) {
     sd = \(k) stats::sd(k, na.rm = FALSE),
     var = \(k) stats::var(k, y = NULL, na.rm = FALSE, use = "everything"),
     quantile = stats::quantile,
-    probability = sample_proportion
+    probability = \(k) sample_proportion(x, k)
   )
 }
 
@@ -571,5 +576,72 @@ obtain_stat_sd = function(samples, stat_result) {
   } else {
     stop()
   }
+}
+
+
+# Currently throws on first error, but will return a pcj_result later.
+stat_probability = function(samples, q, stat = NULL) {
+  stopifnot(exprs = {
+    vek::is_num_vec_xyz(samples)
+    vek::is_num_vec(q)
+  })
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
+
+  names(q) = NULL
+
+  stat_result = pcj_safely(stat(samples))
+  if (has_error(stat_result))
+    stop(get_error(stat_result)[[1L]])
+
+  stat_res = recursive_unclass(stat_result$result, 5L)
+  stat_result_check = check_stat_result(stat_res, "stat")
+  if (!is_empty(stat_result_check))
+    stop(stat_result_check[[1L]])
+
+  if (!is_list(stat_res))
+    stop('"stat" must return a list')
+
+  if (!("probability" %in% names(stat_res)))
+    stop('The list returned by "stat" must contain "probability"')
+
+  if (length(q) == 0L)
+    return(double(0L))
+
+  if (all(is.na(q), na.rm = FALSE))
+    return(q)
+
+  f = stat_res$probability
+  prob_res = pcj_safely(f(q))
+
+  if (has_error(prob_res))
+    stop(get_error(prob_res)[[1L]])
+
+  p = prob_res$result
+  names(p) = NULL
+
+  if (has_warning(stat_result)) {
+    for (w in get_warnings(stat_result))
+      warning(w)
+  }
+
+  if (has_warning(prob_res)) {
+    for (w in get_warnings(prob_res))
+      warning(w)
+  }
+
+  stopifnot(exprs = {
+    vek::is_num_vec_z(q)
+    length(p) == length(q)
+    identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
+    all(p >= 0L, na.rm = TRUE)
+    all(p <= 1L, na.rm = TRUE)
+  })
+
+  return(p)
 }
 
