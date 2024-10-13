@@ -48,52 +48,6 @@ get_warning.pcj_result = get_warning_
 get_message.pcj_result = get_message_
 #' @export
 get_condition.pcj_result = get_condition_
+#' @export
+get_result.pcj_result = get_result_
 
-
-
-
-#pcj_safely = function(expr) {
-#  warnings_ = list()
-#  error_ = NULL
-#  other = list()
-#  condition = list()
-#  result = NULL
-#
-#  result = withCallingHandlers({
-#    tryCatch({
-#      expr
-#    }, error = \(e) {
-#      error_ <<- e
-#    })
-#  }, condition = \(cond) {
-#    condition[[length(condition) + 1L]] <<- cond
-#  })
-#
-#  out = list()
-#  #out = utils::capture.output({
-#  #}, file = NULL, append = FALSE, type = "output", split = FALSE)
-#
-#  #out = trimws(out, which = "both", whitespace = "[ \t\r\n]")
-#  #out = out[out != ""] |>
-#  #  as.list()
-#
-#  warnings_ = Filter(\(k) inherits(k, "warning", FALSE), condition)
-#  other = Filter(\(k) !inherits(k, "warning", FALSE), condition)
-#
-#  if (length(warnings_) == 0L)
-#    warnings_ = NULL
-#
-#  if (!is.null(error_))
-#    result = NULL
-#
-#  if (length(other) == 0L)
-#    other = NULL
-#
-#  return(list(
-#    error = error_,
-#    warnings = warnings_,
-#    condition = other,
-#    output = out,
-#    result = result
-#  ))
-#}

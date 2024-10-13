@@ -182,6 +182,11 @@ get_condition_ = function(object, ...) {
 }
 
 
+get_result_ = function(object, ...) {
+  object$result
+}
+
+
 strsplit_ = function(x, split) {
   stopifnot(exprs = {
     vek::is_chr_vec_x1(x)

@@ -1407,7 +1407,7 @@ plot_sequential = function(
 {
   stopifnot(exprs = {
     is.pcj_process_capability_jags1(object)
-    is.pcj_sequential_analysis1(object$sequential_study)
+    is.pcj_sequential_analysis1(object$sequential_analysis)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
     vek::is_lgl_vec_x1(show_prior)

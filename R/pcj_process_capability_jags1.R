@@ -184,3 +184,61 @@ print.pcj_process_capability_jags1_summary = function(object, ...) {
   return(invisible(object))
 }
 
+
+#' @export
+probability.pcj_process_capability_jags1 = function(
+    object, q, x, distribution, i = NULL, stat = NULL
+  )
+{
+  stopifnot(exprs = {
+    is.pcj_process_capability_jags1(object)
+    vek::is_chr_vec_xb1(x)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+    x %in% variable.names(object, distribution)
+  })
+
+  if (is.null(stat))
+    stat = default_stats
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
+
+  if (is.pcj_sequential_analysis1(object$sequential_analysis)) {
+    stopifnot(exprs = {
+      vek::is_int_vec_x1(i)
+      i >= -1L
+      i != 0L
+      i <= length(object$sequential_analysis$fit)
+    })
+
+  } else {
+    stopifnot(is.null(i))
+  }
+
+  if (distribution == "prior") {
+    stop("Prior distribution currently does not support probability()")
+  }
+  else if (distribution == "prior_predictive") {
+    p = probability(object$prior_study, q, x, stat)
+    return(p)
+  }
+  else if (distribution == "posterior") {
+    if (is.pcj_model1(object$pcj_model1)) {
+      p = probability(object$pcj_model1, q, x, stat)
+      return(p)
+    }
+    else if (is.pcj_sequential_analysis1(object$sequential_analysis)) {
+      p = probability(object$sequential_analysis, q, x, i, stat)
+      return(p)
+    } else {
+      stop()
+    }
+  } else {
+    stop()
+  }
+}
+

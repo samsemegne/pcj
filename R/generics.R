@@ -20,6 +20,10 @@ get_message = function(object, ...) UseMethod("get_message")
 get_condition = function(object, ...) UseMethod("get_condition")
 
 
+#' @export
+get_result = function(object, ...) UseMethod("get_result")
+
+
 has_error = function(object, ...) {
   e = get_error(object, ...)
   stopifnot(is_list(e))
