@@ -619,6 +619,7 @@ plot_prior_predictive_ = function(
   })
 
   if (!is.null(at)) {
+    # Note. When lines type "h" is implemented, length 1 is ok.
     if (graphics == "lines")
       stopifnot(length(at) > 1L)
     else if (graphics == "points")
@@ -635,18 +636,26 @@ plot_prior_predictive_ = function(
       !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
     })
 
+    # TODO Create generalized function for re-ordering of vector arguments.
+    is_col_vec = \(k) {
+      return(is.vector(unclass(k), mode = "any") && is.atomic(unclass(k)))
+    }
 
-    # TODO
-    #is_col_vec = \(k) {
-    #  vek::is_num_vec(k) || vek::is_chr_vec(k) || vek::is_lgl_vec(k)
-    #}
-    #
-    #if (graphics == "points" && "col" %in% names(dots)
-    #    && is_col_vec(dots$col))
-    #{
-    #
-    #}
-    #rm(is_col_vec)
+    if (graphics == "points" && "col" %in% names(dots) &&
+        is_col_vec(dots$col) && length(dots$col) > 1L)
+    {
+      # Re-order "col"
+      stopifnot(length(dots$col) <= length(at))
+      adj_col = dots$col
+      col_class = class(adj_col)
+      adj_col = unclass(adj_col)
+      if (length(adj_col) < length(at))
+        adj_col = rep_len(adj_col, length(at))
+
+      adj_col = adj_col[at_order]
+      class(adj_col) = col_class
+      dots$col = adj_col
+    }
   }
 
   xlim = NULL

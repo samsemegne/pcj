@@ -64,6 +64,7 @@ sequential_analysis = function(
 
 #' @export
 summary.pcj_sequential_analysis1 = function(object, ...) {
+  stopifnot(is.pcj_sequential_analysis1(object))
 
   results = lapply(object$fit, summary)
 
@@ -114,6 +115,39 @@ print.pcj_sequential_analysis1_summary = function(object, ...) {
 
   return(invisible(object))
 }
+
+
+
+#' @export
+probability.pcj_sequential_analysis1 = function(object, q, x, i, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_sequential_analysis1(object)
+    length(object$fit) > 0L
+    vek::is_num_vec(q)
+    vek::is_chr_vec_xb1(x)
+    vek::is_int_vec_x1(i)
+    #x %in% variable.names(object, "posterior")
+    i >= -1L
+    i != 0L
+    i <= length(object$fit)
+  })
+
+  if (is.null(stat))
+    stat = default_stats
+
+  stopifnot(exprs = {
+    !is.object(stat)
+    is.function(stat)
+    length(formals(stat)) > 0L
+  })
+
+  if (i == -1L)
+    i = length(object$fit)
+
+  obj = object$fit[[i]]
+  return(probability.pcj_model1(obj, q, x, stat))
+}
+
 
 
 # TODO implement get_error etc
