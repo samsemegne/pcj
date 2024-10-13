@@ -165,6 +165,8 @@ get_warning.pcj_process_capability_jags1_summary = get_warning_
 get_message.pcj_process_capability_jags1_summary = get_message_
 #' @export
 get_condition.pcj_process_capability_jags1_summary = get_condition_
+#' @export
+get_result.pcj_process_capability_jags1_summary = get_result_
 
 
 #' @export

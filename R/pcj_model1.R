@@ -114,6 +114,8 @@ get_warning.pcj_model1 = get_warning_
 get_message.pcj_model1 = get_message_
 #' @export
 get_condition.pcj_model1 = get_condition_
+#' @export
+get_result.pcj_model1 = get_result_
 
 
 get_model1_str = function(capability_indices) {

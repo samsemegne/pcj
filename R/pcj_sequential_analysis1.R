@@ -63,6 +63,19 @@ sequential_analysis = function(
 
 
 #' @export
+get_error.pcj_sequential_analysis1 = get_error_
+#' @export
+get_warning.pcj_sequential_analysis1 = get_warning_
+#' @export
+get_message.pcj_sequential_analysis1 = get_message_
+#' @export
+get_condition.pcj_sequential_analysis1 = get_condition_
+#' @export
+get_result.pcj_sequential_analysis1 = get_result_
+
+
+
+#' @export
 summary.pcj_sequential_analysis1 = function(object, ...) {
   stopifnot(is.pcj_sequential_analysis1(object))
 
@@ -97,6 +110,8 @@ get_warning.pcj_sequential_analysis1_summary = get_warning_
 get_message.pcj_sequential_analysis1_summary = get_message_
 #' @export
 get_condition.pcj_sequential_analysis1_summary = get_condition_
+#' @export
+get_result.pcj_sequential_analysis1_summary = get_result_
 
 
 #' @export
@@ -148,6 +163,3 @@ probability.pcj_sequential_analysis1 = function(object, q, x, i, stat = NULL) {
   return(probability.pcj_model1(obj, q, x, stat))
 }
 
-
-
-# TODO implement get_error etc

@@ -101,6 +101,8 @@ get_warning.pcj_prior_predictive1 = get_warning_
 get_message.pcj_prior_predictive1 = get_message_
 #' @export
 get_condition.pcj_prior_predictive1 = get_condition_
+#' @export
+get_result.pcj_prior_predictive1 = get_result_
 
 
 #' @export
@@ -246,6 +248,8 @@ get_warning.pcj_prior_predictive1_summary = get_warning_
 get_message.pcj_prior_predictive1_summary = get_message_
 #' @export
 get_condition.pcj_prior_predictive1_summary = get_condition_
+#' @export
+get_result.pcj_prior_predictive1_summary = get_result_
 
 
 #' @export
