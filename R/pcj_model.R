@@ -1,9 +1,9 @@
 
 
-is.pcj_model1 = function(x) is_of_mono_class(x, "pcj_model1")
+is.pcj_model = function(x) is_of_mono_class(x, "pcj_model")
 
 
-new_pcj_model1 = function(
+new_pcj_model = function(
     data,
     pci_params,
     prior_mu,
@@ -98,7 +98,7 @@ new_pcj_model1 = function(
 
   obj = as.environment(obj)
 
-  class(obj) = c("pcj_model1")
+  class(obj) = c("pcj_model")
 
   lockEnvironment(obj, bindings = TRUE)
 
@@ -107,15 +107,15 @@ new_pcj_model1 = function(
 
 
 #' @export
-get_error.pcj_model1 = get_error_
+get_error.pcj_model = get_error_
 #' @export
-get_warning.pcj_model1 = get_warning_
+get_warning.pcj_model = get_warning_
 #' @export
-get_message.pcj_model1 = get_message_
+get_message.pcj_model = get_message_
 #' @export
-get_condition.pcj_model1 = get_condition_
+get_condition.pcj_model = get_condition_
 #' @export
-get_result.pcj_model1 = get_result_
+get_result.pcj_model = get_result_
 
 
 get_model1_str = function(capability_indices) {
@@ -187,9 +187,9 @@ get_nonconformance_var_name = function() {
 
 
 #' @export
-variable.names.pcj_model1 = function(object, distribution) {
+variable.names.pcj_model = function(object, distribution) {
   stopifnot(exprs = {
-    is.pcj_model1(object)
+    is.pcj_model(object)
     is.pci_params(object$result$pci_params)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "posterior")
@@ -210,9 +210,9 @@ variable.names.pcj_model1 = function(object, distribution) {
 
 
 #' @export
-get_sample.pcj_model1 = function(object, x, chain) {
+get_sample.pcj_model = function(object, x, chain) {
   stopifnot(exprs = {
-    is.pcj_model1(object)
+    is.pcj_model(object)
     vek::is_chr_vec_xb1(x)
     vek::is_int_vec_x1(chain) || vek::is_chr_vec_xb1(chain)
   })
@@ -249,8 +249,8 @@ get_sample.pcj_model1 = function(object, x, chain) {
 # Currently, statistics are obtained using JAGS (coda::mcmc_list specifically),
 # however 'stat' will be used later for consistency and extensibility.
 #' @export
-summary.pcj_model1 = function(object) {
-  stopifnot(is.pcj_model1(object))
+summary.pcj_model = function(object) {
+  stopifnot(is.pcj_model(object))
 
   cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5", "q.75",
            "q.975")
@@ -301,24 +301,24 @@ summary.pcj_model1 = function(object) {
     )
   }
 
-  class(res) = "pcj_model1_summary"
+  class(res) = "pcj_model_summary"
   return(res)
 }
 
 
 #' @export
-get_error.pcj_model1_summary = get_error_
+get_error.pcj_model_summary = get_error_
 #' @export
-get_warning.pcj_model1_summary = get_warning_
+get_warning.pcj_model_summary = get_warning_
 #' @export
-get_message.pcj_model1_summary = get_message_
+get_message.pcj_model_summary = get_message_
 #' @export
-get_condition.pcj_model1_summary = get_condition_
+get_condition.pcj_model_summary = get_condition_
 
 
 #' @export
-print.pcj_model1_summary = function(object, ...) {
-  stopifnot(is_of_mono_class(object, "pcj_model1_summary"))
+print.pcj_model_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_model_summary"))
 
   if (has_error(object))
     stop(get_error(object)[[1L]])
@@ -355,9 +355,9 @@ store_prior = function(x) {
 
 
 #' @export
-probability.pcj_model1 = function(object, q, x, stat = NULL) {
+probability.pcj_model = function(object, q, x, stat = NULL) {
   stopifnot(exprs = {
-    is.pcj_model1(object)
+    is.pcj_model(object)
     vek::is_num_vec(q)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
@@ -380,27 +380,27 @@ probability.pcj_model1 = function(object, q, x, stat = NULL) {
 
 ## TODO
 ##' @export
-#mean.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {
+#mean.pcj_model = function(object, ..., x = NULL, stat = NULL) {
 #  stopifnot(exprs = {
-#    is.pcj_model1(object)
+#    is.pcj_model(object)
 #  })
 #}
 
 
 ## TODO
 ##' @export
-#median.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {
+#median.pcj_model = function(object, ..., x = NULL, stat = NULL) {
 #  stopifnot(exprs = {
-#    is.pcj_model1(object)
+#    is.pcj_model(object)
 #  })
 #}
 
 
 ## TODO
 ##' @export
-#quantile.pcj_model1 = function(object, ..., x = NULL, stat = NULL) {
+#quantile.pcj_model = function(object, ..., x = NULL, stat = NULL) {
 #  stopifnot(exprs = {
-#    is.pcj_model1(object)
+#    is.pcj_model(object)
 #  })
 #}
 

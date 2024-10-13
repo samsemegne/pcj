@@ -15,7 +15,7 @@ plot_prior = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
+    is.pcj_process_capability(object) || is.pcj_model(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -31,9 +31,9 @@ plot_prior = function(
   })
 
   prior_key = sprintf("%s%s", "prior_", x)
-  if (is.pcj_process_capability_jags1(object))
+  if (is.pcj_process_capability(object))
     prior_obj = object$prior_study$result[[prior_key]]
-  else if (is.pcj_model1(object))
+  else if (is.pcj_model(object))
     prior_obj = object$result[[prior_key]]
   else
     stop()
@@ -105,7 +105,7 @@ plot_posterior = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
+    is.pcj_process_capability(object) || is.pcj_model(object)
   })
 
   graphics = "lines"
@@ -140,8 +140,8 @@ plot_point_prior = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object)
-    is.pcj_prior_predictive1(object$prior_study)
+    is.pcj_process_capability(object)
+    is.pcj_prior_predictive(object$prior_study)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -293,8 +293,8 @@ plot_prior_ = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object) # TODO or is.pcj_model
-    is.pcj_prior_predictive1(object$prior_study)
+    is.pcj_process_capability(object) # TODO or is.pcj_model
+    is.pcj_prior_predictive(object$prior_study)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -504,8 +504,8 @@ plot_prior_predictive_ = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object)
-    is.pcj_prior_predictive1(object$prior_study)
+    is.pcj_process_capability(object)
+    is.pcj_prior_predictive(object$prior_study)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
   })
@@ -554,7 +554,7 @@ plot_prior_predictive_ = function(
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
 
-  samples = get_sample.pcj_prior_predictive1(object$prior_study, var_name)
+  samples = get_sample.pcj_prior_predictive(object$prior_study, var_name)
 
   add = FALSE
   if ("add" %in% names(dots)) {
@@ -851,7 +851,7 @@ plot_posterior_ = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object) || is.pcj_model1(object)
+    is.pcj_process_capability(object) || is.pcj_model(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
   })
@@ -860,7 +860,7 @@ plot_posterior_ = function(
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
 
-  if (is.pcj_process_capability_jags1(object)) {
+  if (is.pcj_process_capability(object)) {
     stopifnot(is.pcj_sequential_analysis1(object$sequential_analysis))
 
     last_i = length(object$sequential_analysis$fit)
@@ -871,7 +871,7 @@ plot_posterior_ = function(
       w = list()
       return(new_pcj_plot_object(NULL, NULL, meta, e, w))
     }
-  } else if (is.pcj_model1(object)) {
+  } else if (is.pcj_model(object)) {
     if (has_error(object)) {
       meta = list()
       e = list(simpleError('The model exited with errors'))
@@ -923,19 +923,19 @@ plot_posterior_ = function(
 
   #browser()
 
-  if (is.pcj_model1(object)) {
-    samples = get_sample.pcj_model1(object, var_name, "all")
+  if (is.pcj_model(object)) {
+    samples = get_sample.pcj_model(object, var_name, "all")
   }
-  else if (is.pcj_process_capability_jags1(object)) {
+  else if (is.pcj_process_capability(object)) {
     samples = last_fit |>
-      get_sample.pcj_model1(var_name, "all")
+      get_sample.pcj_model(var_name, "all")
   }
-  else if (is.pcj_process_capability_jags1(object) &&
+  else if (is.pcj_process_capability(object) &&
            is.null(object$sequential_analysis))
   {
     # TODO the error check
-    #stopifnot(is.null(object$pcj_model1$error))
-    samples = get_sample.pcj_model1(object$pcj_model1, var_name, "all")
+    #stopifnot(is.null(object$pcj_model$error))
+    samples = get_sample.pcj_model(object$pcj_model, var_name, "all")
   }
   else {
     stop()
@@ -1161,7 +1161,7 @@ plot_posterior_ = function(
   )
 
   e = list()
-  w_ = if (is.pcj_model1(object)) get_warning(object) else get_warning(last_fit)
+  w_ = if (is.pcj_model(object)) get_warning(object) else get_warning(last_fit)
   w = c(w_, get_warning(at_obj), get_warning(stat_obj_))
   graphics_obj = new_pcj_plot_object(func, args, data, e, w)
 
@@ -1415,7 +1415,7 @@ plot_sequential = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object)
+    is.pcj_process_capability(object)
     is.pcj_sequential_analysis1(object$sequential_analysis)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")

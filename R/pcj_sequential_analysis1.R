@@ -39,7 +39,7 @@ sequential_analysis = function(
   for (i in 1:length(at)) {
     n = at[i]
     dat = utils::head(data, n)
-    obj = new_pcj_model1(
+    obj = new_pcj_model(
       dat,
       pci_params,
       prior_mu,
@@ -160,6 +160,6 @@ probability.pcj_sequential_analysis1 = function(object, q, x, i, stat = NULL) {
     i = length(object$fit)
 
   obj = object$fit[[i]]
-  return(probability.pcj_model1(obj, q, x, stat))
+  return(probability.pcj_model(obj, q, x, stat))
 }
 

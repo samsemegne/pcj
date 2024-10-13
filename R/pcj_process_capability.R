@@ -1,8 +1,8 @@
 
 
 
-is.pcj_process_capability_jags1 = function(x) {
-  is_of_mono_class(x, "pcj_process_capability_jags1")
+is.pcj_process_capability = function(x) {
+  is_of_mono_class(x, "pcj_process_capability")
 }
 
 
@@ -49,11 +49,11 @@ estimate_capability = function(
     prior_predictive_params
   )
 
-  pcj_model1 = NULL
+  pcj_model = NULL
   sequential = NULL
   if (is.null(sequential_params)) {
     # Estimate a single model using all data.
-    pcj_model1 = new_pcj_model1(
+    pcj_model = new_pcj_model(
       data,
       pci_params,
       prior_mu,
@@ -74,10 +74,10 @@ estimate_capability = function(
 
   final_obj = new.env(hash = TRUE, parent = parent.frame(1L), size = NA)
   final_obj$prior_study = prior_study_obj
-  final_obj$pcj_model1 = pcj_model1
+  final_obj$pcj_model = pcj_model
   final_obj$sequential_analysis = sequential
 
-  class(final_obj) = "pcj_process_capability_jags1"
+  class(final_obj) = "pcj_process_capability"
 
   lockEnvironment(final_obj, bindings = TRUE)
 
@@ -86,26 +86,26 @@ estimate_capability = function(
 
 
 #' @export
-variable.names.pcj_process_capability_jags1 = function(object, distribution) {
+variable.names.pcj_process_capability = function(object, distribution) {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object)
+    is.pcj_process_capability(object)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
   })
 
   if (distribution %in% c("prior", "prior_predictive")) {
-    stopifnot(is.pcj_prior_predictive1(object$prior_study))
-    v = variable.names.pcj_prior_predictive1(object$prior_study, distribution)
+    stopifnot(is.pcj_prior_predictive(object$prior_study))
+    v = variable.names.pcj_prior_predictive(object$prior_study, distribution)
     return(v)
   } else if (distribution == "posterior") {
-    if (is.pcj_model1(object$pcj_model)) {
-      v = variable.names.pcj_model1(object$pcj_model, distribution)
+    if (is.pcj_model(object$pcj_model)) {
+      v = variable.names.pcj_model(object$pcj_model, distribution)
       return(v)
     } else if (is.pcj_sequential_analysis1(object$sequential_analysis)) {
       last_i = length(object$sequential_analysis$fit)
       last_model = object$sequential_analysis$fit[[last_i]]
-      stopifnot(is.pcj_model1(last_model))
-      v = variable.names.pcj_model1(last_model, distribution)
+      stopifnot(is.pcj_model(last_model))
+      v = variable.names.pcj_model(last_model, distribution)
       return(v)
     } else {
       stop()
@@ -118,17 +118,17 @@ variable.names.pcj_process_capability_jags1 = function(object, distribution) {
 
 # TODO add data sample size column
 #' @export
-summary.pcj_process_capability_jags1 = function(object) {
-  stopifnot(is.pcj_process_capability_jags1(object))
+summary.pcj_process_capability = function(object) {
+  stopifnot(is.pcj_process_capability(object))
 
   o1 = summary(object$prior_study)
 
-  if (is.pcj_model1(object$pcj_model1)) {
-    o2 = summary(object$pcj_model1)
+  if (is.pcj_model(object$pcj_model)) {
+    o2 = summary(object$pcj_model)
   }
   else if (is.pcj_sequential_analysis1(object$sequential_analysis)) {
     o2 = summary(object$sequential_analysis)
-  } else if (is.null(object$pcj_model1) &&
+  } else if (is.null(object$pcj_model) &&
              is.null(object$sequential_analysis))
   {
     o2 = NULL
@@ -152,26 +152,26 @@ summary.pcj_process_capability_jags1 = function(object) {
     result = df
   )
 
-  class(res) = "pcj_process_capability_jags1_summary"
+  class(res) = "pcj_process_capability_summary"
   return(res)
 }
 
 
 #' @export
-get_error.pcj_process_capability_jags1_summary = get_error_
+get_error.pcj_process_capability_summary = get_error_
 #' @export
-get_warning.pcj_process_capability_jags1_summary = get_warning_
+get_warning.pcj_process_capability_summary = get_warning_
 #' @export
-get_message.pcj_process_capability_jags1_summary = get_message_
+get_message.pcj_process_capability_summary = get_message_
 #' @export
-get_condition.pcj_process_capability_jags1_summary = get_condition_
+get_condition.pcj_process_capability_summary = get_condition_
 #' @export
-get_result.pcj_process_capability_jags1_summary = get_result_
+get_result.pcj_process_capability_summary = get_result_
 
 
 #' @export
-print.pcj_process_capability_jags1_summary = function(object, ...) {
-  stopifnot(is_of_mono_class(object, "pcj_process_capability_jags1_summary"))
+print.pcj_process_capability_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_process_capability_summary"))
 
   if (has_error(object))
     stop(get_error(object)[[1L]])
@@ -188,12 +188,12 @@ print.pcj_process_capability_jags1_summary = function(object, ...) {
 
 
 #' @export
-probability.pcj_process_capability_jags1 = function(
+probability.pcj_process_capability = function(
     object, q, x, distribution, i = NULL, stat = NULL
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability_jags1(object)
+    is.pcj_process_capability(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
@@ -229,8 +229,8 @@ probability.pcj_process_capability_jags1 = function(
     return(p)
   }
   else if (distribution == "posterior") {
-    if (is.pcj_model1(object$pcj_model1)) {
-      p = probability(object$pcj_model1, q, x, stat)
+    if (is.pcj_model(object$pcj_model)) {
+      p = probability(object$pcj_model, q, x, stat)
       return(p)
     }
     else if (is.pcj_sequential_analysis1(object$sequential_analysis)) {

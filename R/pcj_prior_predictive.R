@@ -1,6 +1,6 @@
 
 
-is.pcj_prior_predictive1 = function(x) inherits(x, "pcj_prior_predictive1")
+is.pcj_prior_predictive = function(x) inherits(x, "pcj_prior_predictive")
 
 
 new_prior_predictive1 = function(
@@ -85,7 +85,7 @@ new_prior_predictive1 = function(
   class(obj) = NULL
 
   obj = as.environment(obj)
-  class(obj) = "pcj_prior_predictive1"
+  class(obj) = "pcj_prior_predictive"
 
   lockEnvironment(obj, bindings = TRUE)
 
@@ -94,21 +94,21 @@ new_prior_predictive1 = function(
 
 
 #' @export
-get_error.pcj_prior_predictive1 = get_error_
+get_error.pcj_prior_predictive = get_error_
 #' @export
-get_warning.pcj_prior_predictive1 = get_warning_
+get_warning.pcj_prior_predictive = get_warning_
 #' @export
-get_message.pcj_prior_predictive1 = get_message_
+get_message.pcj_prior_predictive = get_message_
 #' @export
-get_condition.pcj_prior_predictive1 = get_condition_
+get_condition.pcj_prior_predictive = get_condition_
 #' @export
-get_result.pcj_prior_predictive1 = get_result_
+get_result.pcj_prior_predictive = get_result_
 
 
 #' @export
-variable.names.pcj_prior_predictive1 = function(object, distribution) {
+variable.names.pcj_prior_predictive = function(object, distribution) {
   stopifnot(exprs = {
-    is.pcj_prior_predictive1(object)
+    is.pcj_prior_predictive(object)
     is.pci_params(object$result$pci_params)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive")
@@ -128,8 +128,8 @@ variable.names.pcj_prior_predictive1 = function(object, distribution) {
 
 
 #' @export
-summary.pcj_prior_predictive1 = function(object, stat = NULL) {
-  stopifnot(is.pcj_prior_predictive1(object))
+summary.pcj_prior_predictive = function(object, stat = NULL) {
+  stopifnot(is.pcj_prior_predictive(object))
 
   var_name = variable.names(object, "prior_predictive")
 
@@ -153,7 +153,7 @@ summary.pcj_prior_predictive1 = function(object, stat = NULL) {
       result = df
     )
 
-    class(res) = "pcj_prior_predictive1_summary"
+    class(res) = "pcj_prior_predictive_summary"
     return(res)
   }
 
@@ -234,27 +234,27 @@ summary.pcj_prior_predictive1 = function(object, stat = NULL) {
     result = df
   )
 
-  class(summary_obj) = "pcj_prior_predictive1_summary"
+  class(summary_obj) = "pcj_prior_predictive_summary"
 
   return(summary_obj)
 }
 
 
 #' @export
-get_error.pcj_prior_predictive1_summary = get_error_
+get_error.pcj_prior_predictive_summary = get_error_
 #' @export
-get_warning.pcj_prior_predictive1_summary = get_warning_
+get_warning.pcj_prior_predictive_summary = get_warning_
 #' @export
-get_message.pcj_prior_predictive1_summary = get_message_
+get_message.pcj_prior_predictive_summary = get_message_
 #' @export
-get_condition.pcj_prior_predictive1_summary = get_condition_
+get_condition.pcj_prior_predictive_summary = get_condition_
 #' @export
-get_result.pcj_prior_predictive1_summary = get_result_
+get_result.pcj_prior_predictive_summary = get_result_
 
 
 #' @export
-print.pcj_prior_predictive1_summary = function(object, ...) {
-  stopifnot(is_of_mono_class(object, "pcj_prior_predictive1_summary"))
+print.pcj_prior_predictive_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_prior_predictive_summary"))
 
   if (has_error(object))
     stop(get_error(object)[[1L]])
@@ -271,9 +271,9 @@ print.pcj_prior_predictive1_summary = function(object, ...) {
 
 
 #' @export
-get_sample.pcj_prior_predictive1 = function(object, x) {
+get_sample.pcj_prior_predictive = function(object, x) {
   stopifnot(exprs = {
-    is.pcj_prior_predictive1(object)
+    is.pcj_prior_predictive(object)
     vek::is_chr_vec_xb1(x)
   })
 
@@ -282,9 +282,9 @@ get_sample.pcj_prior_predictive1 = function(object, x) {
 
 
 #' @export
-probability.pcj_prior_predictive1 = function(object, q, x, stat = NULL) {
+probability.pcj_prior_predictive = function(object, q, x, stat = NULL) {
   stopifnot(exprs = {
-    is.pcj_prior_predictive1(object)
+    is.pcj_prior_predictive(object)
     vek::is_num_vec(q)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
