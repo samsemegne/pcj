@@ -3,7 +3,7 @@
 is.pcj_prior_predictive = function(x) inherits(x, "pcj_prior_predictive")
 
 
-new_prior_predictive1 = function(
+new_prior_predictive = function(
     pci_params,
     prior_mu,
     prior_sigma,
