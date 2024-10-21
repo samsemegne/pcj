@@ -378,19 +378,19 @@ store_prior = function(x) {
 }
 
 
-probability.pcj_model = function(object, q, x, stat = NULL) {
+probability.pcj_model = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_model(object)
-    vek::is_num_vec(q)
+    vek::is_num_vec(value)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
     is_empty(check_stat(stat, "stat"))
   })
 
-  samples = get_sample(object, x)
+  samples = get_sample(object, x, "all")
   stat_res = pcj_safely(stat(samples))
 
-  return(stat_probability(samples, q, stat_res))
+  return(stat_probability(samples, value, stat_res))
 }
 
 
