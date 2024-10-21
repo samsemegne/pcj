@@ -3,7 +3,6 @@
 is.sequential_params = function(x) is_of_mono_class(x, "sequential_params")
 
 
-#' @export
 new_sequential_params = function(at) {
   stopifnot(exprs = {
     vek::is_int_vec_x(at)
