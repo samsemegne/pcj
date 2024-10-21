@@ -1,8 +1,8 @@
 
 
 #' @export
-PcjModelX = R6::R6Class(
-  "PcjModelX",
+PcjProcessCapability1 = R6::R6Class(
+  "PcjProcessCapability1",
   private = list(
     content_ = NULL
   ),
@@ -105,7 +105,7 @@ PcjModelX = R6::R6Class(
         if (!missing(evaluate))
           args$evaluate = evaluate
 
-        obj = do.call(update.pcj_modelx, args)
+        obj = do.call(update.pcj_process_capability1, args)
       }
 
       private$content_ = obj
@@ -113,31 +113,31 @@ PcjModelX = R6::R6Class(
     },
 
     summary = function() {
-      return(summary.pcj_modelx(self$content))
+      return(summary.pcj_process_capability1(self$content))
     },
 
     variable.names = function(distribution) {
-      return(variable.names.pcj_modelx(self$content, distribution))
+      return(variable.names.pcj_process_capability1(self$content, distribution))
     },
 
     plot_prior = function(x, ...) {
-      return(plot_prior.pcj_modelx(self$content, ..., x = x))
+      return(plot_prior.pcj_process_capability1(self$content, ..., x = x))
     },
 
     plot_prior_predictive = function(x, ...) {
-      return(plot_prior_predictive.pcj_modelx(self$content, ..., x = x))
+      return(plot_prior_predictive.pcj_process_capability1(self$content, ..., x = x))
     },
 
     plot_posterior = function(x, ...) {
-      return(plot_posterior.pcj_modelx(self$content, ..., x = x))
+      return(plot_posterior.pcj_process_capability1(self$content, ..., x = x))
     },
 
     probability = function(x, distribution, value) {
-      return(probability.pcj_modelx(self$content, x, distribution, value))
+      return(probability.pcj_process_capability1(self$content, x, distribution, value))
     },
 
     quantile = function(x, distribution, value) {
-      return(quantile.pcj_modelx(self$content, x, distribution, value))
+      return(quantile.pcj_process_capability1(self$content, x, distribution, value))
     },
 
     new_pci_params1 = function(
@@ -188,57 +188,57 @@ PcjModelX = R6::R6Class(
 
 
 #' @export
-get_condition.PcjModelX = function(object) return(object$condition)
+get_condition.PcjProcessCapability1 = function(object) return(object$condition)
 #' @export
-get_error.PcjModelX = function(object) return(object$error)
+get_error.PcjProcessCapability1 = function(object) return(object$error)
 #' @export
-get_warning.PcjModelX = function(object) return(object$warning)
+get_warning.PcjProcessCapability1 = function(object) return(object$warning)
 #' @export
-get_message.PcjModelX = function(object) return(object$message)
+get_message.PcjProcessCapability1 = function(object) return(object$message)
 #' @export
-get_output.PcjModelX = function(object) return(object$output)
+get_output.PcjProcessCapability1 = function(object) return(object$output)
 #' @export
-get_result.PcjModelX = function(object) return(get_result(object$content))
+get_result.PcjProcessCapability1 = function(object) return(get_result(object$content))
 
 
 #' @export
-update.PcjModelX = function(object, ...) {
+update.PcjProcessCapability1 = function(object, ...) {
   return(object$update(...))
 }
 
 
 #' @export
-summary.PcjModelX = function(object) {
+summary.PcjProcessCapability1 = function(object) {
   return(object$summary())
 }
 
 
 #' @export
-variable.names.PcjModelX = function(object, distribution) {
+variable.names.PcjProcessCapability1 = function(object, distribution) {
   return(object$variable.names(distribution))
 }
 
 
 #' @export
-probability.PcjModelX = function(object, x, distribution, value) {
+probability.PcjProcessCapability1 = function(object, x, distribution, value) {
   return(object$probability(x, distribution, value))
 }
 
 
 #' @export
-quantile.PcjModelX = function(object, x, distribution, value) {
+quantile.PcjProcessCapability1 = function(object, x, distribution, value) {
   return(object$quantile(x, distribution, value))
 }
 
 
 #' @export
-get_data.PcjModelX = function(object) {
+get_data.PcjProcessCapability1 = function(object) {
   return(get_data(object$content))
 }
 
 
 #' @export
-variable.names.PcjModelX = function(object, distribution) {
+variable.names.PcjProcessCapability1 = function(object, distribution) {
   return(variable.names(object$content, distribution))
 }
 

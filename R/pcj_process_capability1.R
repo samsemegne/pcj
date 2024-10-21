@@ -1,8 +1,8 @@
 
 
 
-is.pcj_modelx = function(x) {
-  is_of_mono_class(x, "pcj_modelx")
+is.pcj_process_capability1 = function(x) {
+  is_of_mono_class(x, "pcj_process_capability1")
 }
 
 
@@ -102,7 +102,7 @@ new_pcj_modelx = function(
     stat = stat
   )
 
-  class(final_obj) = "pcj_modelx"
+  class(final_obj) = "pcj_process_capability1"
 
   lockEnvironment(final_obj, bindings = TRUE)
 
@@ -111,25 +111,25 @@ new_pcj_modelx = function(
 
 
 #' @export
-get_error.pcj_modelx = get_error_
+get_error.pcj_process_capability1 = get_error_
 #' @export
-get_warning.pcj_modelx = get_warning_
+get_warning.pcj_process_capability1 = get_warning_
 #' @export
-get_message.pcj_modelx = get_message_
+get_message.pcj_process_capability1 = get_message_
 #' @export
-get_condition.pcj_modelx = get_condition_
+get_condition.pcj_process_capability1 = get_condition_
 #' @export
-get_result.pcj_modelx = get_result_
+get_result.pcj_process_capability1 = get_result_
 
 
 #' @export
-update.pcj_modelx = function(
+update.pcj_process_capability1 = function(
     object,
     ...
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
   })
 
   if (...length() > 0L) {
@@ -174,9 +174,9 @@ update.pcj_modelx = function(
 
 
 #' @export
-variable.names.pcj_modelx = function(object, distribution) {
+variable.names.pcj_process_capability1 = function(object, distribution) {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
   })
@@ -196,9 +196,9 @@ variable.names.pcj_modelx = function(object, distribution) {
 
 
 #' @export
-get_data.pcj_modelx = function(object) {
+get_data.pcj_process_capability1 = function(object) {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
   })
 
   return(get_data(get_result(object)$pcj_model))
@@ -207,9 +207,9 @@ get_data.pcj_modelx = function(object) {
 
 # TODO chain param behavior
 #' @export
-get_sample.pcj_modelx = function(object, x, distribution, chain) {
+get_sample.pcj_process_capability1 = function(object, x, distribution, chain) {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     is.null(chain) || vek::is_int_vec_x1(chain) || vek::is_chr_vec_xb1(chain)
@@ -231,8 +231,8 @@ get_sample.pcj_modelx = function(object, x, distribution, chain) {
 
 # TODO add data sample size column
 #' @export
-summary.pcj_modelx = function(object) {
-  stopifnot(is.pcj_modelx(object))
+summary.pcj_process_capability1 = function(object) {
+  stopifnot(is.pcj_process_capability1(object))
 
   res = get_result(object)
   o1 = NULL
@@ -299,9 +299,9 @@ print.pcj_modelx_summary = function(object, ...) {
 
 
 #' @export
-probability.pcj_modelx = function(object, x, distribution, value) {
+probability.pcj_process_capability1 = function(object, x, distribution, value) {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
@@ -324,9 +324,9 @@ probability.pcj_modelx = function(object, x, distribution, value) {
 }
 
 
-#mean.pcj_modelx = function(object, x, distribution, stat = NULL) {
+#mean.pcj_process_capability1 = function(object, x, distribution, stat = NULL) {
 #  stopifnot(exprs = {
-#    is.pcj_modelx(object)
+#    is.pcj_process_capability1(object)
 #    vek::is_chr_vec_xb1(x)
 #    vek::is_chr_vec_xb1(distribution)
 #    distribution %in% c("prior", "prior_predictive", "posterior")
@@ -354,9 +354,9 @@ probability.pcj_modelx = function(object, x, distribution, value) {
 #}
 
 
-#median.pcj_modelx = function(object, x, distribution, stat = NULL) {
+#median.pcj_process_capability1 = function(object, x, distribution, stat = NULL) {
 #  stopifnot(exprs = {
-#    is.pcj_modelx(object)
+#    is.pcj_process_capability1(object)
 #    vek::is_chr_vec_xb1(x)
 #    vek::is_chr_vec_xb1(distribution)
 #    distribution %in% c("prior", "prior_predictive", "posterior")
@@ -385,9 +385,9 @@ probability.pcj_modelx = function(object, x, distribution, value) {
 
 
 #' @export
-quantile.pcj_modelx = function(object, x, distribution, value) {
+quantile.pcj_process_capability1 = function(object, x, distribution, value) {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")

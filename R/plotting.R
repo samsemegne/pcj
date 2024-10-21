@@ -7,7 +7,7 @@ is.pcj_plot_object_list = function(x) {
 
 
 #' @export
-plot_prior.pcj_modelx = function(
+plot_prior.pcj_process_capability1 = function(
     object,
     ...,
     x = NULL,
@@ -15,7 +15,7 @@ plot_prior.pcj_modelx = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -50,7 +50,7 @@ plot_prior.pcj_modelx = function(
 
 
 #' @export
-plot_prior_predictive.pcj_modelx = function(
+plot_prior_predictive.pcj_process_capability1 = function(
     object,
     ...,
     x = NULL,
@@ -59,7 +59,7 @@ plot_prior_predictive.pcj_modelx = function(
 {
   #browser()
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
   })
@@ -92,7 +92,7 @@ plot_prior_predictive.pcj_modelx = function(
 
 
 #' @export
-plot_posterior.pcj_modelx = function(
+plot_posterior.pcj_process_capability1 = function(
     object,
     ...,
     x = NULL,
@@ -100,7 +100,7 @@ plot_posterior.pcj_modelx = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
   })
@@ -153,7 +153,7 @@ plot_point_prior = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -305,7 +305,7 @@ plot_prior_ = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -515,7 +515,7 @@ plot_prior_predictive_ = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
   })
@@ -851,7 +851,7 @@ plot_posterior_ = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
   })
@@ -1174,7 +1174,7 @@ plot_area = function(
   )
 {
   stopifnot(exprs = {
-    is.pcj_modelx(object)
+    is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
