@@ -1,6 +1,10 @@
 
 
 #' @export
+get_data = function(object, ...) UseMethod("get_data")
+
+
+#' @export
 get_sample = function(object, ...) UseMethod("get_sample")
 
 
@@ -40,3 +44,16 @@ has_warning = function(object, ...) {
 
 #' @export
 probability = function(object, ...) UseMethod("probability")
+
+
+#' @export
+plot_prior = function(object, ...) UseMethod("plot_prior")
+
+
+#' @export
+plot_prior_predictive = function(object, ...) UseMethod("plot_prior_predictive")
+
+
+#' @export
+plot_posterior = function(object, ...) UseMethod("plot_posterior")
+

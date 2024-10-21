@@ -7,7 +7,8 @@ new_prior_predictive = function(
     pci_params,
     prior_mu,
     prior_sigma,
-    prior_predictive_params
+    prior_predictive_params,
+    evaluate = FALSE
   )
 {
   stopifnot(exprs = {
@@ -18,6 +19,7 @@ new_prior_predictive = function(
     !(is_pcj_point_prior(prior_mu) && is_pcj_point_prior(prior_sigma))
     is.prior_predictive_params(prior_predictive_params)
     is_valid__prior_predictive_params(prior_predictive_params)
+    vek::is_lgl_vec_x1(evaluate)
   })
 
   if (is_pcj_point_prior(prior_sigma))
@@ -27,6 +29,28 @@ new_prior_predictive = function(
   rng_kind = prior_predictive_params$rng_kind
   rng_version = prior_predictive_params$rng_version
   sample_size = prior_predictive_params$sample_size
+
+  RNGversion(rng_version)
+  set.seed(seed, kind = rng_kind)
+  stopifnot(RNGkind()[1L] == rng_kind)
+
+  obj = list(condition = list(), output = list(), result = list())
+  content = list(
+    pci_params = pci_params,
+    prior_mu = store_prior(prior_mu),
+    prior_sigma = store_prior(prior_sigma),
+    prior_predictive_params = prior_predictive_params,
+    r_version = R.version$version.string,
+    evaluate = evaluate
+  )
+
+  if (!evaluate) {
+    obj$result = content
+    obj = as.environment(obj)
+    class(obj) = "pcj_prior_predictive"
+    lockEnvironment(obj, bindings = TRUE)
+    return(obj)
+  }
 
   target = pci_params$target
   lsl = pci_params$lsl
@@ -71,18 +95,12 @@ new_prior_predictive = function(
       all(apply(df, 2L, vek::is_num_vec_xyz), na.rm = FALSE)
     })
 
-    return(list(
-      prior_predictive_sample = df,
-      pci_params = pci_params,
-      prior_mu = store_prior(prior_mu),
-      prior_sigma = store_prior(prior_sigma),
-      prior_predictive_params = prior_predictive_params,
-      r_version = R.version$version.string
-    ))
+    return(list(prior_predictive_sample = df))
   }
 
   obj = pcj_safely(f())
   class(obj) = NULL
+  obj$result = c(obj$result, content)
 
   obj = as.environment(obj)
   class(obj) = "pcj_prior_predictive"
@@ -93,23 +111,22 @@ new_prior_predictive = function(
 }
 
 
-#' @export
+
 get_error.pcj_prior_predictive = get_error_
-#' @export
+
 get_warning.pcj_prior_predictive = get_warning_
-#' @export
+
 get_message.pcj_prior_predictive = get_message_
-#' @export
+
 get_condition.pcj_prior_predictive = get_condition_
-#' @export
+
 get_result.pcj_prior_predictive = get_result_
 
 
-#' @export
 variable.names.pcj_prior_predictive = function(object, distribution) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
-    is.pci_params(object$result$pci_params)
+    is.pci_params(get_result(object)$pci_params)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive")
   })
@@ -118,7 +135,7 @@ variable.names.pcj_prior_predictive = function(object, distribution) {
     return(get_model1_prior_var_name())
   } else if (distribution == "prior_predictive") {
     return(c(
-      object$result$pci_params$capability_indices,
+      get_result(object)$pci_params$capability_indices,
       get_nonconformance_var_name()
     ))
   } else {
@@ -127,14 +144,13 @@ variable.names.pcj_prior_predictive = function(object, distribution) {
 }
 
 
-#' @export
 summary.pcj_prior_predictive = function(object, stat = NULL) {
-  stopifnot(is.pcj_prior_predictive(object))
+  stopifnot(exprs = {
+    is.pcj_prior_predictive(object)
+    is_empty(check_stat(stat, "stat"))
+  })
 
   var_name = variable.names(object, "prior_predictive")
-
-  if (is.null(stat))
-    stat = default_stats
 
   if (has_error(object)) {
     cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5",
@@ -161,12 +177,12 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
     samples = get_sample(object, x)
 
     stat_res_ = pcj_safely(default_stats(samples))
-    stat_res = recursive_unclass(stat_res_$result, 5L) # TODO
+    stat_res = recursive_unclass(get_result(stat_res_), 5L) # TODO
     stat_check = check_stat_result(stat_res, "stat")
 
     at = c("mean", "q.025", "q.25", "q.5", "q.75", "q.975")
     if (is_empty(stat_check)) {
-      at_res = get_at(at, samples, stat_res)
+      at_res = get_at(at, samples, stat_res_)
       sd_res = obtain_stat_sd(samples, stat_res)
     } else {
       cond = list(simpleError("Invalid stat result"))
@@ -196,12 +212,12 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
   })
 
   df_rows = lapply(res, \(k) {
-    at = k$at$result
+    at = get_result(k$at)
     return(new_df(
       x = k$x,
       distribution = "prior_predictive",
       mean =  at["mean"],
-      sd =    k$sd$result,
+      sd =    get_result(k$sd),
       q.025 = at["q.025"],
       q.25 =  at["q.25"],
       q.5 =   at["q.5"],
@@ -240,19 +256,18 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
 }
 
 
-#' @export
+
 get_error.pcj_prior_predictive_summary = get_error_
-#' @export
+
 get_warning.pcj_prior_predictive_summary = get_warning_
-#' @export
+
 get_message.pcj_prior_predictive_summary = get_message_
-#' @export
+
 get_condition.pcj_prior_predictive_summary = get_condition_
-#' @export
+
 get_result.pcj_prior_predictive_summary = get_result_
 
 
-#' @export
 print.pcj_prior_predictive_summary = function(object, ...) {
   stopifnot(is_of_mono_class(object, "pcj_prior_predictive_summary"))
 
@@ -264,43 +279,93 @@ print.pcj_prior_predictive_summary = function(object, ...) {
       warning(w)
   }
 
-  print.data.frame(object$result, ...)
+  print.data.frame(get_result(object), ...)
 
   return(invisible(object))
 }
 
 
-#' @export
 get_sample.pcj_prior_predictive = function(object, x) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
     vek::is_chr_vec_xb1(x)
-  })
-
-  return(object$result$prior_predictive_sample[, x]) # TODO check indexing behavior
-}
-
-
-#' @export
-probability.pcj_prior_predictive = function(object, q, x, stat = NULL) {
-  stopifnot(exprs = {
-    is.pcj_prior_predictive(object)
-    vek::is_num_vec(q)
-    vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
   })
 
-  if (is.null(stat))
-    stat = default_stats
+  return(get_result(object)$prior_predictive_sample[, x]) # TODO check indexing behavior
+}
 
+
+probability.pcj_prior_predictive = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
-    !is.object(stat)
-    is.function(stat)
-    length(formals(stat)) > 0L
+    is.pcj_prior_predictive(object)
+    vek::is_num_vec(value)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior_predictive")
+    is_empty(check_stat(stat, "stat"))
   })
 
   samples = get_sample(object, x)
+  stat_res = pcj_safely(stat(samples))
 
-  return(stat_probability(samples, q, stat))
+  return(stat_probability(samples, value, stat_res))
 }
+
+
+#mean.pcj_prior_predictive = function(object, x, stat = NULL) {
+#  stopifnot(exprs = {
+#    is.pcj_prior_predictive(object)
+#    vek::is_chr_vec_xb1(x)
+#    x %in% variable.names(object, "prior_predictive")
+#  })
+#
+#  if (is.null(stat))
+#    stat = default_stats
+#
+#  stat_check = check_stat(stat, "stat")
+#  if (!is_empty(stat_check))
+#    stop(stat_check[[1L]])
+#
+#  samples = get_sample(object, x)
+#  stat_res = obtain_stat_result(samples, stat)
+#
+#  return(stat_mode_("mean", samples, stat_res))
+#}
+
+
+#median.pcj_prior_predictive = function(object, x, stat = NULL) {
+#  stopifnot(exprs = {
+#    is.pcj_prior_predictive(object)
+#    vek::is_chr_vec_xb1(x)
+#    x %in% variable.names(object, "prior_predictive")
+#  })
+#
+#  if (is.null(stat))
+#    stat = default_stats
+#
+#  stat_check = check_stat(stat, "stat")
+#  if (!is_empty(stat_check))
+#    stop(stat_check[[1L]])
+#
+#  samples = get_sample(object, x)
+#  stat_res = obtain_stat_result(samples, stat)
+#
+#  return(stat_mode_("median", samples, stat_res))
+#}
+
+
+quantile.pcj_prior_predictive = function(object, x, value, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_prior_predictive(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior_predictive")
+    is_empty(check_stat(stat, "stat"))
+  })
+
+  samples = get_sample(object, x)
+  stat_res = pcj_safely(stat(samples))
+
+  return(stat_quantile_(value, samples, stat_res))
+}
+
 

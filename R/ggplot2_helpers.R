@@ -23,7 +23,7 @@ pcj_plot_object_to_ggplot2 = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
   func = switch(
-    object$result$func,
+    get_result(object)$func,
     "plot.default" = plot_default_to_ggplot2,
     "lines.default" = lines_default_to_ggplot2,
     "points.default" = points_default_to_ggplot2,
@@ -393,7 +393,7 @@ polygon_to_ggplot2 = function(object) {
 
 #data = NULL,
 #stat = "identity",
-#position = "identity",
+#display = "identity",
 #na.rm = FALSE,
 #orientation = NA,
 #show.legend = NA,

@@ -7,15 +7,15 @@ is.pcj_plot_object_list = function(x) {
 
 
 #' @export
-plot_prior = function(
+plot_prior.pcj_modelx = function(
     object,
     ...,
     x = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object) || is.pcj_model(object)
+    is.pcj_modelx(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
@@ -31,23 +31,18 @@ plot_prior = function(
   })
 
   prior_key = sprintf("%s%s", "prior_", x)
-  if (is.pcj_process_capability(object))
-    prior_obj = object$prior_study$result[[prior_key]]
-  else if (is.pcj_model(object))
-    prior_obj = object$result[[prior_key]]
-  else
-    stop()
+  prior_obj = get_result(get_result(object)$prior_study)[[prior_key]]
 
   if (is_pcj_point_prior(prior_obj)) {
-    return(plot_point_prior(object, ..., x = x, transform = transform))
+    return(plot_point_prior(object, ..., x = x, offset = offset))
   }
   else if (graphics %in% c("lines", "points")) {
-    return(plot_prior_(object, ..., x = x, transform = transform))
+    return(plot_prior_(object, ..., x = x, offset = offset))
   }
   else if (graphics == "area") {
     dots = list(...)
-    return(do.call(plot_prior_area, c(list(object), dots[-1L], list(x = x, transform = transform))))
-    #return(plot_prior_area(object, ..., x = x, transform = transform))
+    return(do.call(plot_prior_area, c(list(object), dots[-1L],
+                                      list(x = x, offset = offset))))
   } else {
     stop()
   }
@@ -55,14 +50,20 @@ plot_prior = function(
 
 
 #' @export
-plot_prior_predictive = function(
+plot_prior_predictive.pcj_modelx = function(
     object,
     ...,
     x = NULL,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
+  #browser()
+  stopifnot(exprs = {
+    is.pcj_modelx(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior_predictive")
+  })
+
   graphics = "lines"
   if (...length() > 0L)
     if (dots_names(...)[1L] == "")
@@ -74,20 +75,15 @@ plot_prior_predictive = function(
   })
 
   if (graphics %in% c("lines", "points")) {
-    ###browser()
     dots = list(...)
-    return(do.call(plot_prior_predictive_, c(list(object), dots, list(x = x, stat = stat, transform = transform))))
-    #return(plot_prior_predictive_(
-    #  object,
-    #  ...,
-    #  x = x,
-    #  stat = stat,
-    #  transform = transform
-    #))
+    return(do.call(plot_prior_predictive_,
+                   c(list(object),
+                     dots,list(x = x, offset = offset))))
   }
   else if (graphics == "area") {
     dots = list(...)
-    args = c(list(object), dots[-1L], list(x = x, stat = stat, transform = transform))
+    args = c(list(object), dots[-1L], list(x = x, offset = offset))
+
     return(do.call(plot_prior_predictive_area, args))
   } else {
     stop()
@@ -96,16 +92,17 @@ plot_prior_predictive = function(
 
 
 #' @export
-plot_posterior = function(
+plot_posterior.pcj_modelx = function(
     object,
     ...,
     x = NULL,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object) || is.pcj_model(object)
+    is.pcj_modelx(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "posterior")
   })
 
   graphics = "lines"
@@ -115,17 +112,33 @@ plot_posterior = function(
 
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(graphics)
-    graphics %in% c("lines", "points", "area")
+    graphics %in% c("lines", "points", "area", "arrows")
   })
 
+  if (x %in% variable.names(object, "prior")) {
+    prior_key = sprintf("%s%s", "prior_", x)
+    prior_obj = get_result(get_result(object)$prior_study)[[prior_key]]
+    if (is_pcj_point_prior(prior_obj)) {
+      stopifnot(graphics %in% c("lines", "arrows"))
+      dots = list(...)
+      if (!("main" %in% names(dots)))
+        dots$main = "Posterior"
+
+      plt = do.call(plot_point_prior, c(list(object), dots, list(x = x, offset = offset)))
+      return(plt)
+    }
+  }
+
+  stopifnot(graphics %in% c("lines", "points", "area"))
+
   if (graphics %in% c("lines", "points")) {
-    #browser()
-    return(plot_posterior_(object, ..., x = x, stat = stat, transform = transform))
+    return(plot_posterior_(object, ..., x = x, offset = offset))
   }
   else if (graphics == "area") {
     dots = list(...)[-1L]
-    return(do.call(plot_posterior_area, c(list(object), dots, list(x = x, stat = stat, transform = transform))))
-    #return(plot_posterior_area(object, ..., x = x, stat = stat, transform = transform))
+    return(do.call(plot_posterior_area,
+                   c(list(object), dots,
+                     list(x = x, offset = offset))))
   } else {
     stop()
   }
@@ -136,17 +149,16 @@ plot_point_prior = function(
     object,
     ...,
     x = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object)
-    is.pcj_prior_predictive(object$prior_study)
+    is.pcj_modelx(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
 
-  tfm_check = check_transform(transform)
+  tfm_check = check_offset(offset)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
 
@@ -180,7 +192,7 @@ plot_point_prior = function(
   var_info = get_var_info()
 
   prior_key = sprintf("prior_%s", var_name)
-  prior_obj = object$prior_study$result[[prior_key]]
+  prior_obj = get_result(get_result(object)$prior_study)[[prior_key]]
   stopifnot(is_pcj_point_prior(prior_obj))
 
   xlim = c(-.5, .5) + prior_obj
@@ -200,7 +212,7 @@ plot_point_prior = function(
     }
 
     xy = list(x = c(prior_obj, prior_obj), y = c(0L, 1L))
-    data = xy |> c(list(x_ = var_name, transform = transform, add = add))
+    data = xy |> c(list(x_ = var_name, offset = offset, add = add))
 
     args = list(type = "l") |>
       smth(dots) |>
@@ -222,7 +234,7 @@ plot_point_prior = function(
   }
   else if (graphics == "arrows") {
     x01y01 = list(x0 = prior_obj, y0 = 0L, x1 = prior_obj, y1 = 1L)
-    data = x01y01 |> c(list(x_ = var_name, transform = transform, add = add))
+    data = x01y01 |> c(list(x_ = var_name, offset = offset, add = add))
 
     args = dots |>
       smth(get_theme_args(
@@ -289,17 +301,16 @@ plot_prior_ = function(
     object,
     ...,
     x = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object) # TODO or is.pcj_model
-    is.pcj_prior_predictive(object$prior_study)
+    is.pcj_modelx(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior")
   })
 
-  tfm_check = check_transform(transform)
+  tfm_check = check_offset(offset)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
 
@@ -350,7 +361,8 @@ plot_prior_ = function(
 
   # Get the prior.
   prior_key = sprintf("prior_%s", var_name)
-  prior_obj = parse_jags_dist(object$prior_study$result[[prior_key]])
+  prior_jags = get_result(get_result(object)$prior_study)[[prior_key]]
+  prior_obj = parse_jags_dist(prior_jags)
   stopifnot(is.pcj_jags_dist(prior_obj))
 
   # Determine x.
@@ -425,7 +437,7 @@ plot_prior_ = function(
   xlab = get_var_lab(var_name)
   legend = xlab
   ylim = range(y, na.rm = TRUE)
-  data = list(x = x, y = y, x_ = var_name, transform = transform, add = add)
+  data = list(x = x, y = y, x_ = var_name, offset = offset, add = add)
 
   args = list(type = type) |>
     smth(dots) |>
@@ -499,37 +511,27 @@ plot_prior_predictive_ = function(
     object,
     ...,
     x = NULL,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object)
-    is.pcj_prior_predictive(object$prior_study)
+    is.pcj_modelx(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
   })
 
-  tfm_check = check_transform(transform)
+  tfm_check = check_offset(offset)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
 
-  if(has_error(object$prior_study)) {
+  if(has_error(get_result(object)$prior_study)) {
     meta = list()
     e = list(simpleError('"object$prior_study" exited with errors'))
     w = list()
     return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
-  if (is.null(stat)) {
-    stat = default_stats
-  } else {
-    stopifnot(exprs = {
-      !is.object(stat)
-      is.function(stat)
-      length(formals(stat)) > 0L
-    })
-  }
+  stat = get_result(object)$stat
 
   graphics = "lines"
   if (...length() > 0L)
@@ -546,7 +548,6 @@ plot_prior_predictive_ = function(
     if (dots_names(...)[1L] == "")
       dots = dots[-1L]
 
-  ##browser()
   stopifnot(is_uniquely_named_list(dots))
 
   var_name = x
@@ -554,7 +555,7 @@ plot_prior_predictive_ = function(
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
 
-  samples = get_sample.pcj_prior_predictive(object$prior_study, var_name)
+  samples = get_sample(get_result(object)$prior_study, var_name)
 
   add = FALSE
   if ("add" %in% names(dots)) {
@@ -583,7 +584,7 @@ plot_prior_predictive_ = function(
     return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
-  stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
+  stat_obj = recursive_unclass(get_result(stat_obj_), 5L) # TODO adjust depth
 
   stat_check = check_stat_result(stat_obj, "stat")
   if (!is_empty(stat_check)) {
@@ -601,7 +602,7 @@ plot_prior_predictive_ = function(
     dots$at = NULL
   }
 
-  at_obj = get_at(at, samples, stat)
+  at_obj = get_at(at, samples, stat_obj_)
 
   if (has_error(at_obj)) {
     meta = list(result = list(
@@ -613,7 +614,7 @@ plot_prior_predictive_ = function(
     return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
-  at = at_obj$result
+  at = get_result(at_obj)
   stopifnot({
     vek::is_num_vec_xyz(at) || is.null(at)
   })
@@ -762,7 +763,7 @@ plot_prior_predictive_ = function(
   ylim = range(xy$y, na.rm = TRUE)
   data = xy |>
     c(list(
-      x_ = var_name, transform = transform, add = add,
+      x_ = var_name, offset = offset, add = add,
       result = list(stat = stat_obj_, stat_check = stat_check, at = at_obj)
     ))
 
@@ -790,7 +791,7 @@ plot_prior_predictive_ = function(
     stop()
   )
 
-  w = c(get_warning(object$prior_study), get_warning(stat_obj_),
+  w = c(get_warning(get_result(object)$prior_study), get_warning(stat_obj_),
         get_warning(at_obj))
 
   e = list()
@@ -846,50 +847,27 @@ plot_posterior_ = function(
     object,
     ...,
     x = NULL,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object) || is.pcj_model(object)
+    is.pcj_modelx(object)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
   })
 
-  tfm_check = check_transform(transform)
+  tfm_check = check_offset(offset)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
 
-  if (is.pcj_process_capability(object)) {
-    stopifnot(is.pcj_sequential_analysis1(object$sequential_analysis))
-
-    last_i = length(object$sequential_analysis$fit)
-    last_fit = object$sequential_analysis$fit[[last_i]]
-    if (has_error(last_fit)) {
-      meta = list()
-      e = list(simpleError('The last model exited with errors'))
-      w = list()
-      return(new_pcj_plot_object(NULL, NULL, meta, e, w))
-    }
-  } else if (is.pcj_model(object)) {
-    if (has_error(object)) {
-      meta = list()
-      e = list(simpleError('The model exited with errors'))
-      w = list()
-      return(new_pcj_plot_object(NULL, NULL, meta, e, w))
-    }
-  } else {
-    stop()
+  if (has_error(object)) {
+    meta = list()
+    e = list(simpleError('The model exited with errors'))
+    w = list()
+    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
-  if (is.null(stat))
-    stat = default_stats
-
-  stopifnot(exprs = {
-    !is.object(stat)
-    is.function(stat)
-    length(formals(stat)) > 0L
-  })
+  stat = get_result(object)$stat
 
   graphics = "lines"
   if (...length() > 0L)
@@ -906,8 +884,6 @@ plot_posterior_ = function(
     if (dots_names(...)[1L] == "")
       dots = dots[-1L]
 
-  #browser()
-
   add = FALSE
   if ("add" %in% names(dots)) {
     add = dots$add
@@ -921,25 +897,7 @@ plot_posterior_ = function(
   var_info = get_var_info()
   var_bounds = get_var_bounds(var_name, var_info)
 
-  #browser()
-
-  if (is.pcj_model(object)) {
-    samples = get_sample.pcj_model(object, var_name, "all")
-  }
-  else if (is.pcj_process_capability(object)) {
-    samples = last_fit |>
-      get_sample.pcj_model(var_name, "all")
-  }
-  else if (is.pcj_process_capability(object) &&
-           is.null(object$sequential_analysis))
-  {
-    # TODO the error check
-    #stopifnot(is.null(object$pcj_model$error))
-    samples = get_sample.pcj_model(object$pcj_model, var_name, "all")
-  }
-  else {
-    stop()
-  }
+  samples = get_sample(object, var_name, "posterior", "all")
 
   stat_args = list(samples)
   if ("..." %in% names(formals(stat))) {
@@ -957,18 +915,18 @@ plot_posterior_ = function(
     meta = list(result = list(stat = stat_obj_))
     e = get_error(stat_obj_)
     w = get_warning(stat_obj_)
-    browser()
+    #browser()
     return(new_pcj_plot_object(NULL, NULL, meta, e, w))
   }
 
-  stat_obj = recursive_unclass(stat_obj_$result, 5L) # TODO adjust depth
+  stat_obj = recursive_unclass(get_result(stat_obj_), 5L) # TODO adjust depth
 
   stat_check = check_stat_result(stat_obj, "stat")
   if (!is_empty(stat_check)) {
     data = list(result = list(stat = stat_obj_, stat_check = stat_check))
     e = stat_check
     w = get_warning(stat_obj_)
-    browser()
+    #browser()
     return(new_pcj_plot_object(NULL, NULL, data, e, w))
   }
 
@@ -978,7 +936,7 @@ plot_posterior_ = function(
     dots$at = NULL
   }
 
-  at_obj = get_at(at, samples, stat)
+  at_obj = get_at(at, samples, stat_obj_)
   if (has_error(at_obj)) {
     data = list(result = list(
       stat = stat_obj_, stat_check = stat_check, at = at_obj))
@@ -988,7 +946,7 @@ plot_posterior_ = function(
     return(new_pcj_plot_object(NULL, NULL, data, e, w))
   }
 
-  at = at_obj$result
+  at = get_result(at_obj)
   stopifnot({
     vek::is_num_vec_xyz(at) || is.null(at)
   })
@@ -1059,7 +1017,7 @@ plot_posterior_ = function(
 
   if (is.function(dens_obj)) {
     y_obj = pcj_safely(dens_obj(x)) # TODO check condition
-    y = y_obj$result
+    y = get_result(y_obj)
     stopifnot(exprs = {
       vek::is_num_vec_xyz(y)
     })
@@ -1078,17 +1036,14 @@ plot_posterior_ = function(
     min_x = x[1L]
     max_x = x[length(x)]
 
-      #browser()
     # Segment xy to be in between the range of x.
     is_left_cut = FALSE
     is_right_cut = FALSE
     if (min(xy$x, na.rm = TRUE) < min_x) {
-      #browser()
       xy = slice_xy(xy$x, xy$y, min_x, FALSE)
       is_left_cut = TRUE
     }
     if (max(xy$x, na.rm = TRUE) > max_x) {
-      #browser()
       xy = slice_xy(xy$x, xy$y, max_x, TRUE)
       is_right_cut = TRUE
     }
@@ -1101,7 +1056,7 @@ plot_posterior_ = function(
       {
         lower = max(xlim[1L], var_bounds$lower, na.rm = FALSE)
         xy = list(x = c(lower, xy$x), y = c(0L, xy$y))
-        #browser()
+        ##browser()
         rm(lower)
       }
       if (fill_zero_right && !is_right_cut &&
@@ -1109,7 +1064,7 @@ plot_posterior_ = function(
       {
         upper = min(xlim[2L], var_bounds$upper, na.rm = FALSE)
         xy = list(x = c(xy$x, upper), y = c(xy$y, 0L))
-        #browser()
+        ##browser()
         rm(upper)
       }
     }
@@ -1126,7 +1081,7 @@ plot_posterior_ = function(
   legend = xlab
   ylab = "Density"
   ylim = range(xy$y, na.rm = TRUE)
-  data = c(xy, list(x_ = var_name, transform = transform, add = add,
+  data = c(xy, list(x_ = var_name, offset = offset, add = add,
                     stat = stat_obj_))
 
   args = dots |>
@@ -1161,7 +1116,7 @@ plot_posterior_ = function(
   )
 
   e = list()
-  w_ = if (is.pcj_model(object)) get_warning(object) else get_warning(last_fit)
+  w_ = get_warning(object)
   w = c(w_, get_warning(at_obj), get_warning(stat_obj_))
   graphics_obj = new_pcj_plot_object(func, args, data, e, w)
 
@@ -1215,20 +1170,21 @@ plot_area = function(
     ...,
     x = NULL,
     distribution,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    # TODO add checks
+    is.pcj_modelx(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "prior_predictive", "posterior")
   })
 
-  tfm_check = check_transform(transform)
+  tfm_check = check_offset(offset)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
+
+  stat = get_result(object)$stat
 
   dots = list(...)
   #stopifnot(is_uniquely_named_list(dots))
@@ -1246,7 +1202,7 @@ plot_area = function(
   # TODO densitiy_func ommit when distr is prior
   args = list(object = object) |>
     c(dots) |>
-    c(list(add = TRUE, x = var_name, stat = stat, transform = list()))
+    c(list(add = TRUE, x = var_name, offset = c(0L, 0L)))
 
   func = switch(
     distribution,
@@ -1261,11 +1217,11 @@ plot_area = function(
   if (has_error(prior_lines)) {
     e = get_error(prior_lines)
     w = get_warning(prior_lines)
-    return(new_pcj_plot_object(NULL, NULL, prior_lines$result$data, e, w))
+    return(new_pcj_plot_object(NULL, NULL, get_result(prior_lines)$data, e, w))
   }
 
-  x_ = prior_lines$result$args$x
-  y_ = prior_lines$result$args$y
+  x_ = get_result(prior_lines)$args$x
+  y_ = get_result(prior_lines)$args$y
   x = c(x_[1L], x_, x_[length(x_)], x_[length(x_)], x_[1L])
   y = c(y_[1L], y_, y_[length(y_)], 0L, 0L)
 
@@ -1281,9 +1237,9 @@ plot_area = function(
     stop()
   )
 
-  data = list(x = x, y = y, x_ = var_name, transform = transform, add = add)
+  data = list(x = x, y = y, x_ = var_name, offset = offset, add = add)
   if (distribution %in% c("posterior", "prior_predictive")) {
-    data$stat = prior_lines$result$data$stat
+    data$stat = get_result(prior_lines)$data$stat
   }
 
   args = list(density = NULL, angle = 45L, fillOddEven = FALSE) |>
@@ -1370,10 +1326,10 @@ plot_prior_area = function(
     object,
     ...,
     x = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
-  plot_area(object, ..., distribution = "prior", x = x, stat = NULL, transform = transform)
+  plot_area(object, ..., distribution = "prior", x = x, offset = offset)
 }
 
 
@@ -1381,11 +1337,10 @@ plot_posterior_area = function(
     object,
     ...,
     x = NULL,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
-  plot_area(object, ..., distribution = "posterior", x = x, stat = stat, transform = transform)
+  plot_area(object, ..., distribution = "posterior", x = x, offset = offset)
 }
 
 
@@ -1393,53 +1348,41 @@ plot_prior_predictive_area = function(
     object,
     ...,
     x = NULL,
-    stat = NULL,
-    transform = list()
+    offset = c(0L, 0L)
   )
 {
-  plot_area(object, ..., distribution = "prior_predictive", x = x, stat = stat, transform = transform)
+  plot_area(object, ..., distribution = "prior_predictive", x = x, offset = offset)
 }
 
 
 #' @export
-plot_sequential = function(
+plot_sequential_procedure = function(
     object,
     ...,
     x = NULL,
     show_prior = TRUE,
-    position = "stack",
+    display = "stack",
     draw_order = -1L,
-    condition_action = "omit_error",
-    stat = NULL,
-    transform = list()
+    condition_action = "omit_if_error",
+    offset = c(0L, 0L)
   )
 {
   stopifnot(exprs = {
-    is.pcj_process_capability(object)
-    is.pcj_sequential_analysis1(object$sequential_analysis)
+    is.pcj_sequential_procedure(object)
     vek::is_chr_vec_xb1(x)
-    x %in% variable.names(object, "posterior")
+    x %in% variable.names(get_result(object)$fit[[1L]], "posterior")
     vek::is_lgl_vec_x1(show_prior)
-    vek::is_chr_vec_xb1(position)
-    position %in% c("stack", "ridges")
+    vek::is_chr_vec_xb1(display)
+    display %in% c("stack", "ridges")
     vek::is_int_vec_x1(draw_order)
     draw_order %in% c(-1L, 1L)
     vek::is_chr_vec_xb(condition_action)
-    all(condition_action %in% "omit_error", na.rm = FALSE)
+    all(condition_action %in% "omit_if_error", na.rm = FALSE)
   })
 
-  tfm_check = check_transform(transform)
+  tfm_check = check_offset(offset)
   if (!is_empty(tfm_check))
     stop(tfm_check[[1L]])
-
-  if (is.null(stat))
-    stat = default_stats
-
-  stopifnot(exprs = {
-    !is.object(stat)
-    is.function(stat)
-    length(formals(stat)) > 0L
-  })
 
   dots = list(...)
   if (length(dots) > 0L)
@@ -1455,11 +1398,13 @@ plot_sequential = function(
   var_name = x
   rm(x)
 
-  if (var_name %in% c("mu", "sigma")) {
+  first_model = get_result(object)$fit[[1L]]
+
+  if (var_name %in% variable.names(first_model, "prior")) {
     prior_key = sprintf("%s%s", "prior_", var_name)
-    prior_obj = object$prior_study$result[[prior_key]]
+    prior_obj = get_result(get_result(first_model)$prior_study)[[prior_key]]
     if (is_pcj_point_prior(prior_obj))
-      stop(paste0("Function 'plot_sequential' currently doesn't support ",
+      stop(paste0("Function 'plot_sequential_procedure' currently doesn't support ",
                   "plotting variables with point priors"))
   }
 
@@ -1469,14 +1414,15 @@ plot_sequential = function(
   if (show_prior) {
     if (var_name %in% c("mu", "sigma")) {
       # Create prior plot.
-      args = c(list(object, add = TRUE, x = var_name, transform = list()), dots)
+      #browser()
+      args = c(list(first_model, add = TRUE, x = var_name, offset = c(0L, 0L)), dots)
       plots[[1L]] = do.call(plot_prior, args)
 
     } else {
+      #browser()
       # Create prior predictive plot.
       args = c(list(
-        object, "lines", add = TRUE, x = var_name, stat = stat,
-        transform = list()
+        first_model, "lines", add = TRUE, x = var_name, offset = c(0L, 0L)
         #class = class
       ), dots)
 
@@ -1485,8 +1431,8 @@ plot_sequential = function(
   }
 
   # Create posterior plots.
-  seq_an = object$sequential_analysis
-  args = list(at = NULL, add = TRUE, x = var_name, stat = stat, transform = list()
+  seq_an = get_result(object)
+  args = list(at = NULL, add = TRUE, x = var_name, offset = c(0L, 0L)
               #class = class
   ) |>
     c(dots)
@@ -1500,7 +1446,7 @@ plot_sequential = function(
   has_error = sapply(plots, \(p) has_error(p),
                      simplify = TRUE, USE.NAMES = FALSE)
 
-  if ("omit_error" %in% condition_action) {
+  if ("omit_if_error" %in% condition_action) {
     if (any(has_error, na.rm = FALSE))
       plots = plots[!has_error]
   }
@@ -1518,21 +1464,21 @@ plot_sequential = function(
   x_max = sapply(plots, \(x) pcj_plot_object_axis_lim_raw(x, "x", "max")) |>
     max(na.rm = FALSE)
 
-  # The position argument determines the height of each plot (except the last).
-  #adj_y_max = rep_len(position, length(y_max) - 1L) |> c(y_max[length(y_max)])
+  # The display argument determines the height of each plot (except the last).
+  #adj_y_max = rep_len(display, length(y_max) - 1L) |> c(y_max[length(y_max)])
 
   # Scale the height of each plot (except the last) by a factor.
-  #k = y_max[1:(length(y_max) - 1L)] * position
+  #k = y_max[1:(length(y_max) - 1L)] * display
   #adj_y_max = c(k, y_max[length(y_max)])
 
-  if (position == "ridges") {
+  if (display == "ridges") {
     # The height of each plot (except the last) is averaged.
     y_max_mean = mean(y_max[1:(length(y_max) - 1L)], na.rm = FALSE)
     y_max_mean = y_max_mean * .75
     adj_y_max = rep_len(y_max_mean, length(y_max) - 1L) |>
       c(y_max[length(y_max)])
   }
-  else if (position == "stack") {
+  else if (display == "stack") {
     # Plots are stacked.
     adj_y_max = y_max
   } else {
@@ -1551,7 +1497,7 @@ plot_sequential = function(
 
   show_prior_ = show_prior
   if (show_prior_) {
-    omit_prior = "omit_error" %in% condition_action && has_error[1L]
+    omit_prior = "omit_if_error" %in% condition_action && has_error[1L]
     show_prior_ = show_prior_ && !omit_prior
   }
 
@@ -1561,7 +1507,7 @@ plot_sequential = function(
     if (var_name %in% c("mu", "sigma")) {
       # Create the prior plot.
       args = list(
-        object, at = NULL, add = TRUE, xlim = xlim, x = var_name, transform = list()
+        get_result(object)$fit[[1L]], at = NULL, add = TRUE, xlim = xlim, x = var_name, offset = c(0L, 0L)
         #class = class,
 
       ) |>
@@ -1574,7 +1520,7 @@ plot_sequential = function(
     } else {
       # Create the prior predictive plot.
       args = list(
-        object,
+        get_result(object)$fit[[1L]],
         at = NULL,
         add = TRUE,
         xlim = xlim
@@ -1582,8 +1528,7 @@ plot_sequential = function(
         c(keep(dots, get_supported_lines_params())) |>
         c(list(
           x = var_name,
-          stat = stat,
-          transform = list()
+          offset = c(0L, 0L)
           #class = class,
         ))
 
@@ -1605,13 +1550,12 @@ plot_sequential = function(
   args = list(
     at = NULL, add = TRUE, xlim = xlim) |>
     c(keep(dots, get_supported_lines_params())) |>
-    c(list(x = var_name, stat = stat,
-           transform = list()))
+    c(list(x = var_name, offset = c(0L, 0L)))
 
   j = if (show_prior) 1L else 0L
   for (i in seq_along(seq_an$fit)) {
     fit_i = seq_an$fit[[i]]
-    args$transform = list(offset = c(0L, transform_y[i + j]))
+    args$offset = list(offset = c(0L, transform_y[i + j]))
     args3 = c(list(fit_i), args)
 
     post_area = do.call(plot_posterior_area, args3)
@@ -1650,7 +1594,7 @@ plot_sequential = function(
   if (!add) {
     # TODO render or not based on "ann" param?
     # Create the y-axis.
-    labels = seq_an$sequential_params$at
+    labels = seq_an$at
     if (show_prior)
       labels = c(0L, labels)
 
@@ -1712,7 +1656,7 @@ plot_sequential = function(
 
 
 # TODO
-plot_trace = function(object, x, transform = list(), ...) {
+plot_trace = function(object, x, offset = c(0L, 0L), ...) {
 
 }
 
@@ -1779,17 +1723,19 @@ get_warning.pcj_plot_object = get_warning_
 get_message.pcj_plot_object = get_message_
 #' @export
 get_condition.pcj_plot_object = get_condition_
+#' @export
+get_result.pcj_plot_object = get_result_
 
 
 preprocess_pcj_plot_object = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
-  args = object$result$args
+  args = get_result(object)$args
 
-  if ("offset" %in% names(object$result$data$transform)) {
-    offset = object$result$data$transform$offset
+  if ("offset" %in% names(get_result(object)$data)) {
+    offset = get_result(object)$data$offset
 
-    if (object$result$func == "arrows") {
+    if (get_result(object)$func == "arrows") {
       if (vek::is_num_vec(args$x0))
         args$x0 = args$x0 + offset[1L]
 
@@ -1831,7 +1777,7 @@ plot.pcj_plot_object = function(object) {
   }
 
   func = switch(
-    object$result$func,
+    get_result(object)$func,
     "plot.default" = graphics::plot.default,
     "plot.xy" = graphics::plot.xy,
     "lines.default" = graphics::lines.default,
@@ -1844,7 +1790,7 @@ plot.pcj_plot_object = function(object) {
 
   obj = preprocess_pcj_plot_object(object)
 
-  do.call(func, obj$result$args)
+  do.call(func, get_result(obj)$args)
 
   return(invisible(object))
 }
@@ -2170,16 +2116,16 @@ pcj_plot_object_axis_lim_raw = function(object, side, lim) {
   g = switch(lim, "min" = min, "max" = max, stop())
   arrows_params = sprintf("%s%s", side, c("0", "1")) # e.g. c('y0', 'y1')
 
-  if (object$result$func == "arrows") {
-    value0 = object$result$args[[arrows_params[1L]]]
-    value1 = object$result$args[[arrows_params[2L]]]
+  if (get_result(object)$func == "arrows") {
+    value0 = get_result(object)$args[[arrows_params[1L]]]
+    value1 = get_result(object)$args[[arrows_params[2L]]]
     if (vek::is_num_vec(value0) || vek::is_num_vec(value1))
       return(g(value0, value1, na.rm = FALSE)) # TODO what if is NA or NaN?
     else
       return(NA) # TODO what return value?
   }
   else {
-    values = object$result$args[[side]]
+    values = get_result(object)$args[[side]]
     if (vek::is_num_vec(values))
       return(g(values, na.rm = TRUE))
     else
@@ -2240,54 +2186,31 @@ check_lim = function(x, label) {
 }
 
 
-check_transform = function(x, label = "transform") {
+check_offset = function(x, label = "offset") {
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(label)
   })
 
   bag = list()
 
-  if (!is_list(x)) {
-    msg = sprintf('"%s" must be a list', label)
+  if (!vek::is_num_vec(x)) {
+    msg = sprintf('"%s" must be a base-R numeric vector', label)
     bag = c(bag, list(typeError(msg)))
     return(bag)
   }
 
-  if (length(x) == 0L) {
-    return(bag)
-  }
-  else if (length(x) == 1L) {
-    if (!("offset" %in% names(x))) {
-      msg = sprintf('"%s" must contain supported transforms', label)
-      bag = c(bag, list(valueError(msg)))
-      return(bag)
-    }
-
-    if (!vek::is_num_vec(x$offset)) {
-      msg = sprintf('"%s$offset" must be a base-R numeric vector', label)
-      bag = c(bag, list(valueError(msg)))
-      return(bag)
-    }
-
-    if (length(x$offset) != 2L) {
-      msg = sprintf('"%s$offset" must be of length 2', label)
-      bag = c(bag, list(valueError(msg)))
-      return(bag)
-    }
-
-    if (!vek::is_num_vec_xyz(x$offset)) {
-      msg = sprintf('"%s$offset" must be finite', label)
-      bag = c(bag, list(valueError(msg)))
-      return(bag)
-    }
-
-    return(bag)
-  } else if (length(x) > 1L) {
-    msg = sprintf('"%s" may currently only contain one transform', label)
+  if (length(x) != 2L) {
+    msg = sprintf('"%s" must be of length 2', label)
     bag = c(bag, list(valueError(msg)))
     return(bag)
-  } else {
-    stop()
   }
+
+  if (!vek::is_num_vec_xyz(x)) {
+    msg = sprintf('"%s" must be finite', label)
+    bag = c(bag, list(valueError(msg)))
+    return(bag)
+  }
+
+  return(bag)
 }
 

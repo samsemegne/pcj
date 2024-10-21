@@ -1,4 +1,27 @@
 
+
+check_stat = function(x, label) {
+  stopifnot(vek::is_chr_vec_xb1(label))
+
+  if (is.object(x)) {
+    msg = sprintf('"%s" must not extend a class', label)
+    return(list(typeError(msg)))
+  }
+
+  if (!is.function(x)) {
+    msg = sprintf('"%s" must be a function', label)
+    return(list(typeError(msg)))
+  }
+
+  if (length(formals(x)) < 1L) {
+    msg = sprintf('"%s" must have at least one parameter')
+    return(list(valueError(msg)))
+  }
+
+  return(list())
+}
+
+
 check_stat_result = function(x, label) {
   stopifnot(exprs = {
     vek::is_chr_vec_xb1(label)
@@ -21,119 +44,124 @@ check_stat_result = function(x, label) {
     par_env$bag = c(par_env$bag, list(...))
   }
 
-  if (is.function(x)) {
-    # Here, "x" is assumed to be a density function.
-    if (length(formals(x)) < 1L) {
-      msg = '"%s" must have one or more parameters' |>
-        sprintf(label)
-
-      bag_append(typeError(msg))
-    }
-
-    return(bag)
-  }
-  else if (is_xy_density(x)) {
-    # Here, "x" is assumed to be a density object, e.g. from stats::density.
-    return(check_xy_density(x, label))
-  }
-  else if (is_list(x))  {
-    # TODO add length check
-
-    if (!is_uniquely_named_list(x)) {
-      msg = sprintf('All names of "%s" must be unique', label)
-      bag_append(typeError(msg))
-    }
-
-    if (!all(names(x) %in% stat_names, na.rm = FALSE)) {
-      msg = sprintf('All names of "%s" must be in: ', label) |>
-        paste0_(stat_names_)
-
-      bag_append(typeError(msg))
-    }
-
-    if (name_count(x, "density") == 1L) {
-      if (is.function(x$density)) {
-        if (length(formals(x$density)) < 1L) {
-          msg = '"%s$density" must have one or more parameters' |>
-            sprintf(label)
-
-          bag_append(typeError(msg))
-        }
-      } else if (is_xy_density(x$density)) { # TODO unclass first?
-        tmp = check_xy_density(x$density, sprintf("%s$density", label))
-        for (cond in tmp)
-          bag_append(cond)
-      } else {
-        msg = paste0_('"%s$density" must be a function or list containing ',
-                      'elements "x" and "y"') |>
-          sprintf(label)
-
-        bag_append(typeError(msg))
-      }
-    }
-
-    if (name_count(x, "quantile") == 1L) {
-      if (!is.function(x$quantile)) {
-        msg = sprintf('"%s$quantile" must be a function', label)
-        bag_append(typeError(msg))
-      } else if (length(formals(x$quantile)) < 1L) {
-        msg = '"%s$quantile" function must have one or more parameters"' |>
-          sprintf(label)
-
-        bag_append(typeError(msg))
-      }
-    }
-
-    if (name_count(x, "probability") == 1L) {
-      if (!is.function(x$probability)) {
-        msg = sprintf('"%s$probability" must be a function', label)
-        bag_append(typeError(msg))
-      } else if (length(formals(x$probability)) < 1L) {
-        msg = '"%s$probability" must have one or more parameters"' |>
-          sprintf(label)
-
-        bag_append(typeError(msg))
-      }
-    }
-
-    if (name_count(x, "mean") == 1L) {
-      for (cond in check_scalar_stat(x$mean, sprintf("%s$mean", label)))
-        bag_append(cond)
-    }
-
-    if (name_count(x, "median") == 1L) {
-      for (cond in check_scalar_stat(x$median, sprintf("%s$median", label)))
-        bag_append(cond)
-    }
-
-    if (name_count(x, "sd") == 1L) {
-      for (cond in check_scalar_stat(x$sd, sprintf("%s$sd", label)))
-        bag_append(cond)
-
-      if (vek::is_num_vec_xyz1(x$sd) && x$sd < 0L) {
-        msg = sprintf('"%s$sd >= 0" is not TRUE', label)
-        bag_append(valueError(msg))
-      }
-    }
-
-    if (name_count(x, "var") == 1L) {
-      for (cond in check_scalar_stat(x$sd, sprintf("%s$var", label)))
-        bag_append(cond)
-
-      if (vek::is_num_vec_xyz1(x$var) && x$var < 0L) {
-        msg = sprintf('"%s$var >= 0" is not TRUE', label)
-        bag_append(valueError(msg))
-      }
-    }
-
-    return(bag)
-  } else {
+  if (!is_list(x)) {
     msg = sprintf('"%s" must be a (density) function or a named list', label)
     bag_append(typeError(msg))
     return(bag)
   }
 
-  stop()
+  # TODO add length check
+
+  if (!is_uniquely_named_list(x)) {
+    msg = sprintf('All names of "%s" must be unique', label)
+    bag_append(typeError(msg))
+  }
+
+  if (!all(names(x) %in% stat_names, na.rm = FALSE)) {
+    msg = sprintf('All names of "%s" must be in: ', label) |>
+      paste0_(stat_names_)
+
+    bag_append(typeError(msg))
+  }
+
+  if (name_count(x, "density") == 1L) {
+    if (is.function(x$density)) {
+      if (length(formals(x$density)) < 1L) {
+        msg = '"%s$density" must have one or more parameters' |>
+          sprintf(label)
+
+        bag_append(typeError(msg))
+      }
+    } else if (is_xy_density(x$density)) { # TODO unclass first?
+      tmp = check_xy_density(x$density, sprintf("%s$density", label))
+      for (cond in tmp)
+        bag_append(cond)
+    } else {
+      msg = paste0_('"%s$density" must be a function or list containing ',
+                    'elements "x" and "y"') |>
+        sprintf(label)
+
+      bag_append(typeError(msg))
+    }
+  }
+
+  if (name_count(x, "quantile") == 1L) {
+    if (!is.function(x$quantile)) {
+      msg = sprintf('"%s$quantile" must be a function', label)
+      bag_append(typeError(msg))
+    } else if (length(formals(x$quantile)) < 1L) {
+      msg = '"%s$quantile" function must have one or more parameters"' |>
+        sprintf(label)
+
+      bag_append(typeError(msg))
+    }
+  }
+
+  if (name_count(x, "probability") == 1L) {
+    if (!is.function(x$probability)) {
+      msg = sprintf('"%s$probability" must be a function', label)
+      bag_append(typeError(msg))
+    } else if (length(formals(x$probability)) < 1L) {
+      msg = '"%s$probability" must have one or more parameters"' |>
+        sprintf(label)
+
+      bag_append(typeError(msg))
+    }
+  }
+
+  if (name_count(x, "mean") == 1L) {
+    for (cond in check_scalar_stat(x$mean, sprintf("%s$mean", label)))
+      bag_append(cond)
+  }
+
+  if (name_count(x, "median") == 1L) {
+    for (cond in check_scalar_stat(x$median, sprintf("%s$median", label)))
+      bag_append(cond)
+  }
+
+  if (name_count(x, "sd") == 1L) {
+    for (cond in check_scalar_stat(x$sd, sprintf("%s$sd", label)))
+      bag_append(cond)
+
+    if (vek::is_num_vec_xyz1(x$sd) && x$sd < 0L) {
+      msg = sprintf('"%s$sd >= 0" is not TRUE', label)
+      bag_append(valueError(msg))
+    }
+  }
+
+  if (name_count(x, "var") == 1L) {
+    for (cond in check_scalar_stat(x$sd, sprintf("%s$var", label)))
+      bag_append(cond)
+
+    if (vek::is_num_vec_xyz1(x$var) && x$var < 0L) {
+      msg = sprintf('"%s$var >= 0" is not TRUE', label)
+      bag_append(valueError(msg))
+    }
+  }
+
+  return(bag)
+
+  #else if (is_list(x))  {
+  #} else {
+  #
+  #}
+  #stop()
+
+  #if (is.function(x)) {
+  #  # Here, "x" is assumed to be a density function.
+  #  if (length(formals(x)) < 1L) {
+  #    msg = '"%s" must have one or more parameters' |>
+  #      sprintf(label)
+  #
+  #    bag_append(typeError(msg))
+  #  }
+  #
+  #  return(bag)
+  #}
+  #else if (is_xy_density(x)) {
+  #  # Here, "x" is assumed to be a density object, e.g. from stats::density.
+  #  return(check_xy_density(x, label))
+  #}
 }
 
 
@@ -301,13 +329,18 @@ get_at = function(at, samples, stat) {
     vek::is_num_vec_xyz(samples)
     is.null(at) || vek::is_num_vec_xyz(at) || is.function(at) ||
       vek::is_chr_vec_xb(at)
+    is.pcj_result(stat)
+    !has_error(stat)
   })
 
-  tmp = check_stat_result(stat, "stat")
-  if (!is_empty(tmp))
-    stop(tmp[[1L]])
+  stat_res = get_result(stat)
+  stat_res = recursive_unclass(stat_res)
+
+  stat_result_check = check_stat_result(stat_res, "stat_result")
+  if (!is_empty(stat_result_check))
+    stop(stat_result_check[[1L]])
   else
-    rm(tmp)
+    rm(stat_result_check)
 
   new_pcj_safe_obj = \(k) {
     return(structure(list(
@@ -350,6 +383,9 @@ get_at = function(at, samples, stat) {
 
     results = list()
 
+    # TODO don't add get_condition(stat) if at only contains mean/median.default
+    results = c(results, list(stat = stat))
+
     lit = numeric(0L)
     if (length(lit_str) > 0L) {
       # Obtain literal values.
@@ -375,14 +411,14 @@ get_at = function(at, samples, stat) {
       })
 
       q_obj = NULL
-      if (is_list(stat) && "quantile" %in% names(stat))
+      if (is_list(stat_res) && "quantile" %in% names(stat_res))
       {
-        q_obj = pcj_safely(stat$quantile(samples, q_val))
-        q = q_obj$result
+        q_obj = pcj_safely(stat_res$quantile(samples, q_val))
+        q = get_result(q_obj)
 
       } else {
         q_obj = pcj_safely(stats::quantile(samples, q_val))
-        q = q_obj$result
+        q = get_result(q_obj)
       }
 
       if (has_error(q_obj)) {
@@ -466,8 +502,8 @@ get_at = function(at, samples, stat) {
           m_obj = pcj_safely(f(samples))
           return(m_obj)
         }
-        else if (is_list(stat) && m %in% names(stat)) {
-          m_val = stat[[m]]
+        else if (is_list(stat_res) && m %in% names(stat_res)) {
+          m_val = stat_res[[m]]
           if (is.function(m_val)) {
             f = m_val
             m_obj = pcj_safely(f(samples))
@@ -487,8 +523,8 @@ get_at = function(at, samples, stat) {
 
       get_mode = \(k) {
         if (is.pcj_result(k)) {
-          if (is_valid_mode(k$result))
-            return(k$result)
+          if (is_valid_mode(get_result(k)))
+            return(get_result(k))
           else
             return(NaN)
         }
@@ -553,7 +589,7 @@ obtain_stat_sd = function(samples, stat_result) {
     if (is.function(stat_result$sd)) {
       f = stat_result$sd
       sd_result = pcj_safely(f(samples))
-      sd_check = check_sd(sd_result$result)
+      sd_check = check_sd(get_result(sd_result))
       if (is_empty(sd_check))
         return(sd_result) # TODO should include stat_obj_ conditions
 
@@ -580,31 +616,18 @@ obtain_stat_sd = function(samples, stat_result) {
 
 
 # Currently throws on first error, but will return a pcj_result later.
-stat_probability = function(samples, q, stat = NULL) {
+stat_probability = function(samples, q, stat_result) {
   stopifnot(exprs = {
     vek::is_num_vec_xyz(samples)
     vek::is_num_vec(q)
   })
 
-  stopifnot(exprs = {
-    !is.object(stat)
-    is.function(stat)
-    length(formals(stat)) > 0L
-  })
-
   names(q) = NULL
 
-  stat_result = pcj_safely(stat(samples))
-  if (has_error(stat_result))
-    stop(get_error(stat_result)[[1L]])
-
-  stat_res = recursive_unclass(stat_result$result, 5L)
-  stat_result_check = check_stat_result(stat_res, "stat")
+  stat_res = recursive_unclass(get_result(stat_result), 5L)
+  stat_result_check = check_stat_result(stat_res, "stat_result")
   if (!is_empty(stat_result_check))
     stop(stat_result_check[[1L]])
-
-  if (!is_list(stat_res))
-    stop('"stat" must return a list')
 
   if (!("probability" %in% names(stat_res)))
     stop('The list returned by "stat" must contain "probability"')
@@ -621,16 +644,11 @@ stat_probability = function(samples, q, stat = NULL) {
   if (has_error(prob_res))
     stop(get_error(prob_res)[[1L]])
 
-  p = prob_res$result
+  p = get_result(prob_res)
   names(p) = NULL
 
   if (has_warning(stat_result)) {
     for (w in get_warnings(stat_result))
-      warning(w)
-  }
-
-  if (has_warning(prob_res)) {
-    for (w in get_warnings(prob_res))
       warning(w)
   }
 
@@ -644,4 +662,64 @@ stat_probability = function(samples, q, stat = NULL) {
 
   return(p)
 }
+
+
+stat_quantile_ = function(x, samples, stat_result) {
+  stopifnot(exprs = {
+    vek::is_num_vec(x)
+    is.pcj_result(stat_result)
+  })
+
+  stat_res = get_result(stat_result)
+  stat_res_ = recursive_unclass(stat_res, 5L)
+
+  stat_res_check = check_stat_result(stat_res_, "stat_result")
+  if (!is_empty(stat_res_check)) {
+    stop(stat_res_check[[1L]])
+  }
+
+  if (!("quantile" %in% names(stat_res)))
+    stop('The list returned by "stat" must contain "quantile"')
+
+  # TODO set default like with base-R, i.e. 0%, 25%, etc?
+  x_ = sprintf("q%s", x)
+
+  res = get_at(x_, samples, stat_result)
+  if (has_error(res)) {
+    stop(get_error(res)[[1L]])
+  }
+
+  if (has_warning(res)) {
+    for (w in get_warning(res))
+      warning(w)
+  }
+
+  val = get_result(res)
+  names(val) = NULL # TODO names as percentages like base-R
+  return(val)
+}
+
+
+#stat_mode_ = function(mode, samples, stat_result) {
+#  stopifnot(exprs = {
+#    vek::is_chr_vec_xb1(mode)
+#    mode %in% c("mean", "median")
+#    # TODO check samples
+#  })
+#
+#  res = get_at(mode, samples, stat_result)
+#  if (has_warning(res)) {
+#    for (w in get_warning(res))
+#      warning(w)
+#  }
+#
+#  if (has_error(res)) {
+#    stop(get_error(res)[[1L]])
+#  }
+#
+#  val = get_result(res)
+#  names(val) = NULL
+#  return(val)
+#}
+
 

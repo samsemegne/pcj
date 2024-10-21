@@ -8,7 +8,8 @@ new_pcj_model = function(
     pci_params,
     prior_mu,
     prior_sigma,
-    sampler_params
+    sampler_params,
+    evaluate = FALSE
   )
 {
   stopifnot(exprs = {
@@ -23,10 +24,31 @@ new_pcj_model = function(
     is_valid__rjags_params(sampler_params)
     all(names(sampler_params$initial_values) %in% c("mu", "sigma"),
         na.rm = FALSE)
+    vek::is_lgl_vec_x1(evaluate)
   })
 
   if (is_pcj_point_prior(prior_sigma))
     stopifnot(prior_sigma > 0L)
+
+  obj = list(condition = list(), output = list(), result = NULL)
+  content = list(
+    data = data,
+    pci_params = pci_params,
+    sampler_params = sampler_params,
+    sample_size = length(data),
+    prior_mu = store_prior(prior_mu),
+    prior_sigma = store_prior(prior_sigma),
+    r_version = R.version$version.string,
+    evaluate = evaluate
+  )
+
+  if (!evaluate) {
+    obj$result = content
+    obj = as.environment(obj)
+    class(obj) = "pcj_model"
+    lockEnvironment(obj, bindings = TRUE)
+    return(obj)
+  }
 
   # Specify the model.
   model_str = get_model1_str(pci_params$capability_indices)
@@ -82,19 +104,10 @@ new_pcj_model = function(
   # Estimate the model.
   obj = pcj_safely(f())
 
-  content = list(
-    pci_params = pci_params,
-    sampler_params = sampler_params,
-    sample_size = length(data),
-    prior_mu = store_prior(prior_mu),
-    prior_sigma = store_prior(prior_sigma),
-    r_version = R.version$version.string
-  )
-
   if (!has_error(obj))
-    obj$result = c(obj$result, content)
+    obj$result = c(get_result(obj), content)
   else
-    obj$result = c(list(data = data), content) # TODO
+    obj$result = content
 
   obj = as.environment(obj)
 
@@ -187,20 +200,29 @@ get_nonconformance_var_name = function() {
 
 
 #' @export
+get_data.pcj_model = function(object) {
+  stopifnot(is.pcj_model(object))
+  return(get_result(object)$data)
+}
+
+
+#' @export
 variable.names.pcj_model = function(object, distribution) {
   stopifnot(exprs = {
     is.pcj_model(object)
-    is.pci_params(object$result$pci_params)
+    is.pci_params(get_result(object)$pci_params)
     vek::is_chr_vec_xb1(distribution)
     distribution %in% c("prior", "posterior")
   })
+
+  #browser()
 
   if (distribution == "prior") {
     return(get_model1_prior_var_name())
   } else if (distribution == "posterior") {
     return(c(
       get_model1_prior_var_name(),
-      object$result$pci_params$capability_indices,
+      get_result(object)$pci_params$capability_indices,
       get_nonconformance_var_name()
     ))
   } else {
@@ -218,7 +240,7 @@ get_sample.pcj_model = function(object, x, chain) {
   })
 
   if (vek::is_int_vec_x1(chain)) {
-    n_chain = object$result$fit$nchain()
+    n_chain = get_result(object)$fit$nchain()
 
     stopifnot(exprs = {
       all(chain > 0L, na.rm = FALSE)
@@ -226,7 +248,7 @@ get_sample.pcj_model = function(object, x, chain) {
       #length(unique(chain)) == length(chain)
     })
 
-    samples = object$result$samples[[chain]][, x] |> # check indexing behavior
+    samples = get_result(object)$samples[[chain]][, x] |> # check indexing behavior
       unclass() # TODO unclass earlier
 
     attributes(samples) = NULL
@@ -234,7 +256,7 @@ get_sample.pcj_model = function(object, x, chain) {
   }
   else if (vek::is_chr_vec_xb1(chain)) {
     stopifnot(chain == "all")
-    samples = object$result$samples |>
+    samples = get_result(object)$samples |>
       lapply(\(k) unclass(k[, x])) |>
       unlist(FALSE, FALSE)
 
@@ -256,7 +278,7 @@ summary.pcj_model = function(object) {
            "q.975")
 
   f = function() {
-    x = summary(object$result$samples)
+    x = summary(get_result(object)$samples)
 
     stats_df = as.data.frame(x$statistics) # TODO defaults
     stats_df = cbind(x = row.names(stats_df), stats_df)
@@ -314,6 +336,8 @@ get_warning.pcj_model_summary = get_warning_
 get_message.pcj_model_summary = get_message_
 #' @export
 get_condition.pcj_model_summary = get_condition_
+#' @export
+get_result.pcj_model_summary = get_result_
 
 
 #' @export
@@ -328,7 +352,7 @@ print.pcj_model_summary = function(object, ...) {
       warning(w)
   }
 
-  print.data.frame(object$result, ...)
+  print.data.frame(get_result(object), ...)
 
   return(invisible(object))
 }
@@ -354,53 +378,61 @@ store_prior = function(x) {
 }
 
 
-#' @export
 probability.pcj_model = function(object, q, x, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_model(object)
     vek::is_num_vec(q)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
+    is_empty(check_stat(stat, "stat"))
   })
 
-  if (is.null(stat))
-    stat = default_stats
+  samples = get_sample(object, x)
+  stat_res = pcj_safely(stat(samples))
 
-  stopifnot(exprs = {
-    !is.object(stat)
-    is.function(stat)
-    length(formals(stat)) > 0L
-  })
-
-  samples = get_sample(object, x, "all")
-
-  return(stat_probability(samples, q, stat))
+  return(stat_probability(samples, q, stat_res))
 }
 
 
-## TODO
-##' @export
-#mean.pcj_model = function(object, ..., x = NULL, stat = NULL) {
+#mean.pcj_model = function(object, x, stat = NULL) {
 #  stopifnot(exprs = {
 #    is.pcj_model(object)
+#    vek::is_chr_vec_xb1(x)
+#    x %in% variable.names(object, "posterior")
 #  })
+#
+#  samples = get_sample(object, x)
+#  stat_res = obtain_stat_result(samples, stat)
+#
+#  return(stat_mode_("mean", samples, stat_res))
 #}
 
 
-## TODO
-##' @export
-#median.pcj_model = function(object, ..., x = NULL, stat = NULL) {
+#median.pcj_model = function(object, x, stat = NULL) {
 #  stopifnot(exprs = {
 #    is.pcj_model(object)
+#    vek::is_chr_vec_xb1(x)
+#    x %in% variable.names(object, "posterior")
 #  })
+#
+#  samples = get_sample(object, x)
+#  stat_res = obtain_stat_result(samples, stat)
+#
+#  return(stat_mode_("median", samples, stat_res))
 #}
 
 
-## TODO
-##' @export
-#quantile.pcj_model = function(object, ..., x = NULL, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_model(object)
-#  })
-#}
+quantile.pcj_model = function(object, x, value, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_model(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "posterior")
+    is_empty(check_stat(stat, "stat"))
+  })
+
+  samples = get_sample(object, x, "all")
+  stat_res = pcj_safely(stat(samples))
+
+  return(stat_quantile_(value, samples, stat_res))
+}
 
