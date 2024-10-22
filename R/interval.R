@@ -35,8 +35,6 @@ new_interval = function(a, b, is_a_inclusive, is_b_inclusive) {
   ))
 }
 
-toS
-
 
 #' @export
 new_lower_tail = function(b, is_b_inclusive) {
