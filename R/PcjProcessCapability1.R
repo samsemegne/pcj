@@ -4,7 +4,22 @@
 PcjProcessCapability1 = R6::R6Class(
   "PcjProcessCapability1",
   private = list(
-    content_ = NULL
+    content_ = NULL,
+    prior_ = NULL,
+    prior_predictive_ = NULL,
+    posterior_ = NULL,
+    setup_obj_ = function() {
+      private$prior_ = create_bayes_distribution(
+        "prior", self$variable.names("prior"), self)
+
+      private$prior_predictive_ = create_bayes_distribution(
+        "prior_predictive", self$variable.names("prior_predictive"), self)
+
+      private$posterior_ = create_bayes_distribution(
+        "posterior", self$variable.names("posterior"), self)
+
+      return(invisible(self))
+    }
   ),
 
   active = list(
@@ -49,6 +64,27 @@ PcjProcessCapability1 = R6::R6Class(
     output = function(value) {
       if (missing(value))
         return(get_output(self$content))
+      else
+        stop(runtimeError("Runtime error"))
+    },
+
+    prior = function(value) {
+      if (missing(value))
+        return(private$prior_)
+      else
+        stop(runtimeError("Runtime error"))
+    },
+
+    prior_predictive = function(value) {
+      if (missing(value))
+        return(private$prior_predictive_)
+      else
+        stop(runtimeError("Runtime error"))
+    },
+
+    posterior = function(value) {
+      if (missing(value))
+        return(private$posterior_)
       else
         stop(runtimeError("Runtime error"))
     }
@@ -109,6 +145,8 @@ PcjProcessCapability1 = R6::R6Class(
       }
 
       private$content_ = obj
+      private$setup_obj_()
+
       return(invisible(self))
     },
 
@@ -198,7 +236,9 @@ get_message.PcjProcessCapability1 = function(object) return(object$message)
 #' @export
 get_output.PcjProcessCapability1 = function(object) return(object$output)
 #' @export
-get_result.PcjProcessCapability1 = function(object) return(get_result(object$content))
+get_result.PcjProcessCapability1 = function(object) {
+  return(get_result(object$content))
+}
 
 
 #' @export

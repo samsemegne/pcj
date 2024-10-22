@@ -645,7 +645,7 @@ plot_prior_predictive_ = function(
     if (graphics == "points" && "col" %in% names(dots) &&
         is_col_vec(dots$col) && length(dots$col) > 1L)
     {
-      # Re-order "col"
+      # Re-order "col".
       stopifnot(length(dots$col) <= length(at))
       adj_col = dots$col
       col_class = class(adj_col)
