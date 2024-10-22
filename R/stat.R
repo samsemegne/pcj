@@ -313,9 +313,9 @@ sample_proportion = function(samples, value) {
   } else if (is_of_mono_class(value, "interval")) {
     prop = prop_lowertail(value$b) - prop_lowertail(value$a)
   } else if (is_of_mono_class(value, "lower_tail")) {
-    prop = prop_lowertial(value$b)
+    prop = prop_lowertail(value$b)
   } else if (is_of_mono_class(value, "upper_tail")) {
-    prop = 1L - prop_lowertial(value$a)
+    prop = 1L - prop_lowertail(value$a)
   } else {
     stop()
   }
@@ -635,7 +635,7 @@ stat_probability = function(samples, q, stat_result) {
     #vek::is_num_vec(q)
   })
 
-  names(q) = NULL
+  #names(q) = NULL
 
   stat_res = recursive_unclass(get_result(stat_result), 5L)
   stat_result_check = check_stat_result(stat_res, "stat_result")
@@ -645,11 +645,11 @@ stat_probability = function(samples, q, stat_result) {
   if (!("probability" %in% names(stat_res)))
     stop('The list returned by "stat" must contain "probability"')
 
-  if (length(q) == 0L)
-    return(double(0L))
+  #if (length(q) == 0L)
+  #  return(double(0L))
 
-  if (all(is.na(q), na.rm = FALSE))
-    return(q)
+  #if (all(is.na(q), na.rm = FALSE))
+  #  return(q)
 
   f = stat_res$probability
   prob_res = pcj_safely(f(q))
@@ -667,8 +667,8 @@ stat_probability = function(samples, q, stat_result) {
 
   stopifnot(exprs = {
     vek::is_num_vec_z(p)
-    length(p) == length(q)
-    identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
+    #length(p) == length(q)
+    #identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
     all(p >= 0L, na.rm = TRUE)
     all(p <= 1L, na.rm = TRUE)
   })

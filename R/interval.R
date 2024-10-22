@@ -41,7 +41,7 @@ new_lower_tail = function(b, is_b_inclusive) {
   stopifnot(exprs = {
     vek::is_num_vec_xy1(b)
     vek::is_lgl_vec_x1(is_b_inclusive)
-    stopifnot(!is.infinite(b))
+    !is.infinite(b)
   })
 
   # TODO consider if is int and .Machine$int.min?
@@ -58,7 +58,7 @@ new_upper_tail = function(a, is_a_inclusive) {
   stopifnot(exprs = {
     vek::is_num_vec_xy1(a)
     vek::is_lgl_vec_x1(is_a_inclusive)
-    stopifnot(!is.infinite(a))
+    !is.infinite(a)
   })
 
   # TODO consider if is int and .Machine$int.max?
