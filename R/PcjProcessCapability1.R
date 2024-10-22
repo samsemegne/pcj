@@ -77,7 +77,7 @@ PcjProcessCapability1 = R6::R6Class(
         if (missing(stat))
           stat = default_stats
 
-        obj = new_pcj_modelx(
+        obj = new_pcj_process_capability1(
           data,
           pci_params,
           prior_mu,

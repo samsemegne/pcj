@@ -7,7 +7,7 @@ is.pcj_process_capability1 = function(x) {
 
 
 #' @export
-new_pcj_modelx = function(
+new_pcj_process_capability1 = function(
     data,
     pci_params,
     prior_mu,
@@ -135,7 +135,7 @@ update.pcj_process_capability1 = function(
   if (...length() > 0L) {
     stopifnot(exprs = {
       !is.null(...names())
-      all(...names() %in% names(formals(new_pcj_modelx)), na.rm = FALSE)
+      all(...names() %in% names(formals(new_pcj_process_capability1)), na.rm = FALSE)
       is_all_unique(...names())
     })
   }
@@ -158,7 +158,7 @@ update.pcj_process_capability1 = function(
   res = get_result(get_result(object)$pcj_model)
   res2 = get_result(get_result(object)$prior_study)
 
-  obj = new_pcj_modelx(
+  obj = new_pcj_process_capability1(
     dots$data %||% res$data,
     dots$pci_params %||%res$pci_params,
     dots$prior_mu %||% res$prior_mu,
@@ -263,26 +263,26 @@ summary.pcj_process_capability1 = function(object) {
     result = df
   )
 
-  class(res) = "pcj_modelx_summary"
+  class(res) = "pcj_process_capability1_summary"
   return(res)
 }
 
 
 #' @export
-get_error.pcj_modelx_summary = get_error_
+get_error.pcj_process_capability1_summary = get_error_
 #' @export
-get_warning.pcj_modelx_summary = get_warning_
+get_warning.pcj_process_capability1_summary = get_warning_
 #' @export
-get_message.pcj_modelx_summary = get_message_
+get_message.pcj_process_capability1_summary = get_message_
 #' @export
-get_condition.pcj_modelx_summary = get_condition_
+get_condition.pcj_process_capability1_summary = get_condition_
 #' @export
-get_result.pcj_modelx_summary = get_result_
+get_result.pcj_process_capability1_summary = get_result_
 
 
 #' @export
-print.pcj_modelx_summary = function(object, ...) {
-  stopifnot(is_of_mono_class(object, "pcj_modelx_summary"))
+print.pcj_process_capability1_summary = function(object, ...) {
+  stopifnot(is_of_mono_class(object, "pcj_process_capability1_summary"))
 
   if (has_error(object))
     stop(get_error(object)[[1L]])
