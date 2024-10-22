@@ -111,18 +111,19 @@ new_prior_predictive = function(
 }
 
 
-
+#' @export
 get_error.pcj_prior_predictive = get_error_
-
+#' @export
 get_warning.pcj_prior_predictive = get_warning_
-
+#' @export
 get_message.pcj_prior_predictive = get_message_
-
+#' @export
 get_condition.pcj_prior_predictive = get_condition_
-
+#' @export
 get_result.pcj_prior_predictive = get_result_
 
 
+#' @export
 variable.names.pcj_prior_predictive = function(object, distribution) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
@@ -144,6 +145,7 @@ variable.names.pcj_prior_predictive = function(object, distribution) {
 }
 
 
+#' @export
 summary.pcj_prior_predictive = function(object, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
@@ -256,18 +258,19 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
 }
 
 
-
+#' @export
 get_error.pcj_prior_predictive_summary = get_error_
-
+#' @export
 get_warning.pcj_prior_predictive_summary = get_warning_
-
+#' @export
 get_message.pcj_prior_predictive_summary = get_message_
-
+#' @export
 get_condition.pcj_prior_predictive_summary = get_condition_
-
+#' @export
 get_result.pcj_prior_predictive_summary = get_result_
 
 
+#' @export
 print.pcj_prior_predictive_summary = function(object, ...) {
   stopifnot(is_of_mono_class(object, "pcj_prior_predictive_summary"))
 
@@ -285,6 +288,7 @@ print.pcj_prior_predictive_summary = function(object, ...) {
 }
 
 
+#' @export
 get_sample.pcj_prior_predictive = function(object, x) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
@@ -296,11 +300,12 @@ get_sample.pcj_prior_predictive = function(object, x) {
 }
 
 
+#' @export
 probability.pcj_prior_predictive = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
-    #vek::is_num_vec(value)
     vek::is_chr_vec_xb1(x)
+    vek::is_num_vec_z(value) || vek::is_chr_vec(value)
     x %in% variable.names(object, "prior_predictive")
     is_empty(check_stat(stat, "stat"))
   })
@@ -354,6 +359,7 @@ probability.pcj_prior_predictive = function(object, x, value, stat = NULL) {
 #}
 
 
+#' @export
 quantile.pcj_prior_predictive = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)

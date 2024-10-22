@@ -304,6 +304,7 @@ probability.pcj_process_capability1 = function(object, x, distribution, value) {
     is.pcj_process_capability1(object)
     vek::is_chr_vec_xb1(x)
     vek::is_chr_vec_xb1(distribution)
+    vek::is_num_vec_z(value) || vek::is_chr_vec(value)
     distribution %in% c("prior", "prior_predictive", "posterior")
     x %in% variable.names(object, distribution)
   })

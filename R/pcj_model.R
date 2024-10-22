@@ -378,11 +378,12 @@ store_prior = function(x) {
 }
 
 
+#' @export
 probability.pcj_model = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_model(object)
-    #vek::is_num_vec(value)
     vek::is_chr_vec_xb1(x)
+    vek::is_num_vec_z(value) || vek::is_chr_vec(value)
     x %in% variable.names(object, "posterior")
     is_empty(check_stat(stat, "stat"))
   })
@@ -421,7 +422,7 @@ probability.pcj_model = function(object, x, value, stat = NULL) {
 #  return(stat_mode_("median", samples, stat_res))
 #}
 
-
+#' @export
 quantile.pcj_model = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_model(object)

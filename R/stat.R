@@ -629,12 +629,11 @@ obtain_stat_sd = function(samples, stat_result) {
 
 
 # Currently throws on first error, but will return a pcj_result later.
-stat_probability = function(samples, q, stat_result) {
+stat_probability = function(samples, value, stat_result) {
   stopifnot(exprs = {
     vek::is_num_vec_xyz(samples)
-    #vek::is_num_vec(q)
+    vek::is_num_vec_z(value) || vek::is_chr_vec(value)
   })
-
 
   stat_res = recursive_unclass(get_result(stat_result), 5L)
   stat_result_check = check_stat_result(stat_res, "stat_result")
@@ -644,43 +643,97 @@ stat_probability = function(samples, q, stat_result) {
   if (!("probability" %in% names(stat_res)))
     stop('The list returned by "stat" must contain "probability"')
 
-  if (vek::is_num_vec(q)) {
-    names(q) = NULL
-    if (length(q) == 0L)
+  f = stat_res$probability
+
+  if (vek::is_num_vec(value)) {
+    names(value) = NULL
+    if (length(value) == 0L)
       return(double(0L))
 
-    if (all(is.na(q), na.rm = FALSE))
-      return(q)
-  }
+    if (all(is.na(value), na.rm = FALSE))
+      return(value)
 
-  f = stat_res$probability
-  prob_res = pcj_safely(f(q))
+    prob_res = pcj_safely(f(value))
 
-  if (has_error(prob_res))
-    stop(get_error(prob_res)[[1L]])
+    if (has_error(prob_res))
+      stop(get_error(prob_res)[[1L]])
 
-  p = get_result(prob_res)
-  names(p) = NULL
+    p = get_result(prob_res)
+    names(p) = NULL
 
-  if (has_warning(stat_result)) {
-    for (w in get_warnings(stat_result))
-      warning(w)
-  }
+    if (has_warning(stat_result)) {
+      for (w in get_warnings(stat_result))
+        warning(w)
+    }
 
-  stopifnot(exprs = {
-    vek::is_num_vec_z(p)
-    all(p >= 0L, na.rm = TRUE)
-    all(p <= 1L, na.rm = TRUE)
-  })
-
-  if (vek::is_num_vec(q)) {
     stopifnot(exprs = {
-      length(p) == length(q)
-      identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
+      vek::is_num_vec_z(p)
+      all(p >= 0L, na.rm = TRUE)
+      all(p <= 1L, na.rm = TRUE)
+      length(p) == length(value)
+      identical(as.double(value[is.na(value)]), as.double(p[is.na(value)]))
     })
-  }
 
-  return(p)
+    return(p)
+
+  } else if (vek::is_chr_vec(value)) {
+    names(value) = NULL
+    if (length(value) == 0L)
+      return(double(0L))
+    else if (all(is.na(value), na.rm = FALSE))
+      return(rep_len(NA_real_, length(value)))
+
+    interval = lapply(value[!is.na(value)], inequality_to_interval)
+
+    is_interval_null = sapply_(interval, is.null)
+    if (any(is_interval_null, na.rm = FALSE))
+      stop("Failed to parse string to interval")
+
+    p_res = lapply(interval, \(k) {
+      return(pcj_safely(f(k)))
+    })
+
+    e = do.call(c, lapply(p_res, get_error))
+    if (!is_empty(e))
+      stop(e[[1L]])
+
+    w = do.call(c, lapply(p_res, get_warning))
+    if (!is_empty(w)) {
+      for (w_ in w)
+        warning(w_)
+    }
+
+    is_num_z1 = sapply_(p_res, \(k) {
+      v = get_result(k)
+      return(vek::is_num_vec_z(v) && length(v) == 1L)
+    })
+
+    if (!all(is_num_z1, na.rm = FALSE))
+      stop('"stat$probability() output error"')
+
+    p = do.call(c, lapply(p_res, get_result))
+
+
+    if (any(is.na(value), na.rm = FALSE)) {
+      p_ = rep_len(NA_real_, length(value))
+      p_[!is.na(value)] = p
+      p = p_
+      rm(p_)
+    }
+
+    stopifnot(exprs = {
+      vek::is_num_vec_z(p)
+      all(p >= 0L, na.rm = TRUE)
+      all(p <= 1L, na.rm = TRUE)
+      length(p) == length(value)
+      identical(as.double(value[is.na(value)]), as.double(p[is.na(value)]))
+    })
+
+    return(p)
+
+  } else {
+    stop()
+  }
 }
 
 
