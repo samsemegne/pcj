@@ -381,7 +381,7 @@ store_prior = function(x) {
 probability.pcj_model = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_model(object)
-    vek::is_num_vec(value)
+    #vek::is_num_vec(value)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "posterior")
     is_empty(check_stat(stat, "stat"))

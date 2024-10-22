@@ -284,20 +284,41 @@ gaussian_density = function(x, ...) {
 
 
 # TODO case length(x) == 0
-sample_proportion = function(x, q) {
+sample_proportion = function(samples, value) {
+  # This function assumes the variable to be a continuous random variable.
   stopifnot(exprs = {
-    vek::is_num_vec_xyz(x)
-    vek::is_num_vec(q)
+    vek::is_num_vec_xyz(samples)
+    vek::is_num_vec(value) ||
+      is_of_mono_class(value, "interval") ||
+      is_of_mono_class(value, "lower_tail") ||
+      is_of_mono_class(value, "upper_tail")
   })
 
-  names(q) = NULL
-
-  prop = sapply_(q, \(k) {
-    if (is.na(k))
-      return(k)
+  prop_lowertail = \(b) {
+    stopifnot(vek::is_num_vec_z(b) && length(b) == 1L)
+    if (is.na(b))
+      return(b)
     else
-      return(sum(x <= k, na.rm = FALSE) / length(x))
-  })
+      return(sum(samples <= b, na.rm = FALSE) / length(samples))
+  }
+
+  if (vek::is_num_vec(value)) {
+    # The values represent point values, so return probabilities of zero.
+    if (length(value) == 0L)
+      return(double(0L))
+
+    names(value) = NULL
+    prop = rep_len(0., length(value))
+    prop[is.na(value)] = value[is.na(value)]
+  } else if (is_of_mono_class(value, "interval")) {
+    prop = prop_lowertail(value$b) - prop_lowertail(value$a)
+  } else if (is_of_mono_class(value, "lower_tail")) {
+    prop = prop_lowertial(value$b)
+  } else if (is_of_mono_class(value, "upper_tail")) {
+    prop = 1L - prop_lowertial(value$a)
+  } else {
+    stop()
+  }
 
   stopifnot(exprs = {
     vek::is_num_vec_z(prop)
@@ -611,7 +632,7 @@ obtain_stat_sd = function(samples, stat_result) {
 stat_probability = function(samples, q, stat_result) {
   stopifnot(exprs = {
     vek::is_num_vec_xyz(samples)
-    vek::is_num_vec(q)
+    #vek::is_num_vec(q)
   })
 
   names(q) = NULL
@@ -645,7 +666,7 @@ stat_probability = function(samples, q, stat_result) {
   }
 
   stopifnot(exprs = {
-    vek::is_num_vec_z(q)
+    vek::is_num_vec_z(p)
     length(p) == length(q)
     identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
     all(p >= 0L, na.rm = TRUE)

@@ -299,7 +299,7 @@ get_sample.pcj_prior_predictive = function(object, x) {
 probability.pcj_prior_predictive = function(object, x, value, stat = NULL) {
   stopifnot(exprs = {
     is.pcj_prior_predictive(object)
-    vek::is_num_vec(value)
+    #vek::is_num_vec(value)
     vek::is_chr_vec_xb1(x)
     x %in% variable.names(object, "prior_predictive")
     is_empty(check_stat(stat, "stat"))
