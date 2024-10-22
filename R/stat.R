@@ -283,12 +283,12 @@ gaussian_density = function(x, ...) {
 }
 
 
-# TODO case length(x) == 0
+# TODO consider how to handle if value is numeric Inf
 sample_proportion = function(samples, value) {
   # This function assumes the variable to be a continuous random variable.
   stopifnot(exprs = {
     vek::is_num_vec_xyz(samples)
-    vek::is_num_vec(value) ||
+    vek::is_num_vec_z(value) ||
       is_of_mono_class(value, "interval") ||
       is_of_mono_class(value, "lower_tail") ||
       is_of_mono_class(value, "upper_tail")
@@ -635,7 +635,6 @@ stat_probability = function(samples, q, stat_result) {
     #vek::is_num_vec(q)
   })
 
-  #names(q) = NULL
 
   stat_res = recursive_unclass(get_result(stat_result), 5L)
   stat_result_check = check_stat_result(stat_res, "stat_result")
@@ -645,11 +644,14 @@ stat_probability = function(samples, q, stat_result) {
   if (!("probability" %in% names(stat_res)))
     stop('The list returned by "stat" must contain "probability"')
 
-  #if (length(q) == 0L)
-  #  return(double(0L))
+  if (vek::is_num_vec(q)) {
+    names(q) = NULL
+    if (length(q) == 0L)
+      return(double(0L))
 
-  #if (all(is.na(q), na.rm = FALSE))
-  #  return(q)
+    if (all(is.na(q), na.rm = FALSE))
+      return(q)
+  }
 
   f = stat_res$probability
   prob_res = pcj_safely(f(q))
@@ -667,11 +669,16 @@ stat_probability = function(samples, q, stat_result) {
 
   stopifnot(exprs = {
     vek::is_num_vec_z(p)
-    #length(p) == length(q)
-    #identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
     all(p >= 0L, na.rm = TRUE)
     all(p <= 1L, na.rm = TRUE)
   })
+
+  if (vek::is_num_vec(q)) {
+    stopifnot(exprs = {
+      length(p) == length(q)
+      identical(as.double(q[is.na(q)]), as.double(p[is.na(q)]))
+    })
+  }
 
   return(p)
 }
