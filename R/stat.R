@@ -578,37 +578,29 @@ obtain_stat_sd = function(samples, stat_result) {
     }
   }
 
-  if (is.function(stat_result)) {
+  if (!("sd" %in% names(stat_result)))
     stop()
-  } else if (is_xy_density(stat_result)) {
-    stop()
-  } else if (is_list(stat_result)) {
-    if (!("sd" %in% names(stat_result)))
-      stop()
 
-    if (is.function(stat_result$sd)) {
-      f = stat_result$sd
-      sd_result = pcj_safely(f(samples))
-      sd_check = check_sd(get_result(sd_result))
-      if (is_empty(sd_check))
-        return(sd_result) # TODO should include stat_obj_ conditions
+  if (is.function(stat_result$sd)) {
+    f = stat_result$sd
+    sd_result = pcj_safely(f(samples))
+    sd_check = check_sd(get_result(sd_result))
+    if (is_empty(sd_check))
+      return(sd_result) # TODO should include stat_obj_ conditions
 
-      sd_result$result = NaN
-      sd_result$condition = c(sd_result$condition, sd_check)
-      return(sd_result)
-    } else if (vek::is_num_vec(stat_result$sd)) {
-      # The stat_result$sd value is not checked here, since it's a value, it has
-      # already been checked by check_stat_result().
-      sd_result = structure(list(
-          condition = list(), # TODO should include stat_obj_ conditions
-          output = list(),
-          result = stat_result$sd
-      ), class = "pcj_result")
+    sd_result$result = NaN
+    sd_result$condition = c(sd_result$condition, sd_check)
+    return(sd_result)
+  } else if (vek::is_num_vec(stat_result$sd)) {
+    # The stat_result$sd value is not checked here, since it's a value, it has
+    # already been checked by check_stat_result().
+    sd_result = structure(list(
+        condition = list(), # TODO should include stat_obj_ conditions
+        output = list(),
+        result = stat_result$sd
+    ), class = "pcj_result")
 
-      return(sd_result)
-    } else {
-      stop()
-    }
+    return(sd_result)
   } else {
     stop()
   }
