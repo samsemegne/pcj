@@ -23,7 +23,7 @@ new_prior_predictive = function(
   })
 
   if (is_pcj_point_prior(prior_sigma))
-    stopifnot(prior_sigma > 0L)
+    stopifnot(prior_sigma$value > 0L)
 
   seed = prior_predictive_params$seed
   rng_kind = prior_predictive_params$rng_kind
@@ -142,6 +142,19 @@ variable.names.pcj_prior_predictive = function(object, distribution) {
   } else {
     stop()
   }
+}
+
+
+#' @export
+get_prior.pcj_prior_predictive = function(object, x) {
+  stopifnot(exprs = {
+    is.pcj_prior_predictive(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior")
+  })
+
+  key = sprintf("prior_%s", x)
+  return(get_result(object)[[key]])
 }
 
 

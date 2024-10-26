@@ -23,22 +23,17 @@ new_pcj_process_capability1 = function(
     length(data) > 1L
     is.pci_params(pci_params)
     is_valid__pci_params(pci_params)
-    vek::is_chr_vec_xb1(prior_mu) || is_pcj_point_prior(prior_mu)
-    vek::is_chr_vec_xb1(prior_sigma) || is_pcj_point_prior(prior_sigma)
-    !(is_pcj_point_prior(prior_mu) && is_pcj_point_prior(prior_sigma))
+    vek::is_chr_vec_xb1(prior_mu) || vek::is_num_vec_xyz1(prior_mu)
+    vek::is_chr_vec_xb1(prior_sigma) || vek::is_num_vec_xyz1(prior_sigma)
     !(is.null(prior_predictive_params) && is.null(sampler_params))
     vek::is_lgl_vec_x1(evaluate)
   })
 
-  if (vek::is_chr_vec_xb1(prior_mu)) {
-    prior_mu = parse_jags_dist(prior_mu)
-    stopifnot(is.pcj_jags_dist(prior_mu))
-  }
-
-  if (vek::is_chr_vec_xb1(prior_sigma)) {
-    prior_sigma = parse_jags_dist(prior_sigma)
-    stopifnot(is.pcj_jags_dist(prior_sigma))
-  }
+  prior_mu = new_pcj_dist(prior_mu)
+  prior_sigma = new_pcj_dist(prior_sigma)
+  stopifnot(exprs = {
+    !(is_pcj_point_prior(prior_mu) && is_pcj_point_prior(prior_sigma))
+  })
 
   if (!is.null(sampler_params)) {
     stopifnot(exprs = {
@@ -227,6 +222,22 @@ get_sample.pcj_process_capability1 = function(object, x, distribution, chain) {
   }
 }
 
+
+#' @export
+get_prior.pcj_process_capability1 = function(object, x) {
+  stopifnot(exprs = {
+    is.pcj_process_capability1(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior")
+  })
+
+  if (!is.null(get_result(object)$prior_study))
+    return(get_prior(get_result(object)$prior_study, x))
+  else if (!is.null(get_result(object)$pcj_model))
+    return(get_prior(get_result(object)$pcj_model, x))
+  else
+    stop()
+}
 
 
 # TODO add data sample size column

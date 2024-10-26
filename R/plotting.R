@@ -29,8 +29,7 @@ plot_prior.pcj_process_capability1 = function(
     graphics %in% c("lines", "points", "area", "arrows")
   })
 
-  prior_key = sprintf("%s%s", "prior_", x)
-  prior_obj = get_result(get_result(object)$prior_study)[[prior_key]]
+  prior_obj = new_pcj_dist(get_prior(object, x))
 
   if (is_pcj_point_prior(prior_obj)) {
     return(plot_point_prior(object, ..., x = x, offset = offset))
@@ -115,8 +114,8 @@ plot_posterior.pcj_process_capability1 = function(
   })
 
   if (x %in% variable.names(object, "prior")) {
-    prior_key = sprintf("%s%s", "prior_", x)
-    prior_obj = get_result(get_result(object)$prior_study)[[prior_key]]
+    prior_obj = new_pcj_dist(get_prior(object, x))
+
     if (is_pcj_point_prior(prior_obj)) {
       stopifnot(graphics %in% c("lines", "arrows"))
       dots = list(...)
@@ -190,11 +189,10 @@ plot_point_prior = function(
   rm(x)
   var_info = get_var_info()
 
-  prior_key = sprintf("prior_%s", var_name)
-  prior_obj = get_result(get_result(object)$prior_study)[[prior_key]]
+  prior_obj = new_pcj_dist(get_prior(object, var_name))
   stopifnot(is_pcj_point_prior(prior_obj))
 
-  xlim = c(-.5, .5) + prior_obj
+  xlim = c(-.5, .5) + prior_obj$value
   ylab = "Mass"
   xlab = get_var_lab(var_name)
   #legend = xlab
@@ -359,9 +357,7 @@ plot_prior_ = function(
   stopifnot(vek::is_lgl_vec_x1(add))
 
   # Get the prior.
-  prior_key = sprintf("prior_%s", var_name)
-  prior_jags = get_result(get_result(object)$prior_study)[[prior_key]]
-  prior_obj = parse_jags_dist(prior_jags)
+  prior_obj = new_pcj_dist(get_prior(object, var_name))$value
   stopifnot(is.pcj_jags_dist(prior_obj))
 
   # Determine x.
@@ -1446,8 +1442,7 @@ plot_sequential_procedure = function(
   first_model = get_result(object)$fit[[1L]]
 
   if (var_name %in% variable.names(first_model, "prior")) {
-    prior_key = sprintf("%s%s", "prior_", var_name)
-    prior_obj = get_result(get_result(first_model)$prior_study)[[prior_key]]
+    prior_obj = new_pcj_dist(get_prior(object, var_name))
     if (is_pcj_point_prior(prior_obj))
       stop(paste0("Function 'plot_sequential_procedure' currently doesn't support ",
                   "plotting variables with point priors"))

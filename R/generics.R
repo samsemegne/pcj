@@ -9,6 +9,10 @@ get_sample = function(object, ...) UseMethod("get_sample")
 
 
 #' @export
+get_prior = function(object, ...) UseMethod("get_prior")
+
+
+#' @export
 get_error = function(object, ...) UseMethod("get_error")
 
 

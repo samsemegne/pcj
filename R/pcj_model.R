@@ -28,7 +28,7 @@ new_pcj_model = function(
   })
 
   if (is_pcj_point_prior(prior_sigma))
-    stopifnot(prior_sigma > 0L)
+    stopifnot(prior_sigma$value > 0L)
 
   obj = list(condition = list(), output = list(), result = NULL)
   content = list(
@@ -266,6 +266,19 @@ get_sample.pcj_model = function(object, x, chain) {
 }
 
 
+#' @export
+get_prior.pcj_model = function(object, x) {
+  stopifnot(exprs = {
+    is.pcj_model(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior")
+  })
+
+  key = sprintf("prior_%s", x)
+  return(get_result(object)[[key]])
+}
+
+
 # Currently, statistics are obtained using JAGS (coda::mcmc_list specifically),
 # however 'stat' will be used later for consistency and extensibility.
 #' @export
@@ -464,20 +477,22 @@ print.pcj_model_summary = function(object, ...) {
 
 
 prior_to_jags = function(x) {
-  if (is.pcj_jags_dist(x))
-    return(sprintf("%s %s", "~", pcj_jags_dist_to_jags(x)))
-  else if (vek::is_num_vec_xyz1(x))
-    return(sprintf("%s %s", "=", as.character(x))) # Point prior
+  stopifnot(is_of_mono_class(x, "pcj_dist"))
+  if (is.pcj_jags_dist(x$value))
+    return(sprintf("%s %s", "~", pcj_jags_dist_to_jags(x$value)))
+  else if (is_pcj_point_prior(x))
+    return(sprintf("%s %s", "=", as.character(x$value)))
   else
     stop()
 }
 
 
 store_prior = function(x) {
-  if (is.pcj_jags_dist(x))
-    return(pcj_jags_dist_to_jags(x))
+  stopifnot(is_of_mono_class(x, "pcj_dist"))
+  if (is.pcj_jags_dist(x$value))
+    return(pcj_jags_dist_to_jags(x$value))
   else if (is_pcj_point_prior(x))
-    return(x)
+    return(x$value)
   else
     stop()
 }

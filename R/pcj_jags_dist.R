@@ -15,12 +15,6 @@ precision_to_sd = function(precision) {
 }
 
 
-is_pcj_point_prior = vek::is_num_vec_xyz1
-
-
-is_pcj_prior = function(x) is.pcj_jags_dist(x) || is_pcj_point_prior(x)
-
-
 pcj_jags_dist_to_jags = function(object) {
   stopifnot(is.pcj_jags_dist(object))
 
@@ -55,14 +49,15 @@ pcj_jags_dist_to_jags2 = function(object) {
 
 pcj_rng = function(object, n) {
   stopifnot(exprs = {
+    is_of_mono_class(object, "pcj_dist")
     vek::is_int_vec_x1(n)
     n >= 0
   })
 
-  if (is.pcj_jags_dist(object))
-    return(pcj_jags_dist_rng(object, n))
+  if (is.pcj_jags_dist(object$value))
+    return(pcj_jags_dist_rng(object$value, n))
   else if (is_pcj_point_prior(object))
-    return(rep_len(object, n))
+    return(rep_len(object$value, n))
   else
     stop()
 }
