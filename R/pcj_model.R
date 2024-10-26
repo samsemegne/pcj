@@ -215,8 +215,6 @@ variable.names.pcj_model = function(object, distribution) {
     distribution %in% c("prior", "posterior")
   })
 
-  #browser()
-
   if (distribution == "prior") {
     return(get_model1_prior_var_name())
   } else if (distribution == "posterior") {

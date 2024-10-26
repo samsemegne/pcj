@@ -1,5 +1,4 @@
 
-
 is.pcj_plot_object = function(x) is_of_mono_class(x, "pcj_plot_object")
 is.pcj_plot_object_list = function(x) {
   is_of_mono_class(x, "pcj_plot_object_list")
@@ -230,7 +229,7 @@ plot_point_prior = function(
 
     data = named_list_rm(data, c("x", "y"))
     args = c(xy, args)
-    graphics_obj = new_pcj_plot_object("lines.default", args, data)
+    graphics_obj = new_pcj_plot_object("lines.default", args, data, object)
   }
   else if (graphics == "arrows") {
     x01y01 = list(x0 = prior_obj, y0 = 0L, x1 = prior_obj, y1 = 1L)
@@ -247,7 +246,7 @@ plot_point_prior = function(
 
     data = named_list_rm(data, c("x0", "y0", "x1", "y1"))
     args = c(x01y01, args)
-    graphics_obj = new_pcj_plot_object("arrows", args, data)
+    graphics_obj = new_pcj_plot_object("arrows", args, data, object)
   } else {
     stop()
   }
@@ -288,7 +287,7 @@ plot_point_prior = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
 
     plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
@@ -460,7 +459,7 @@ plot_prior_ = function(
   func = switch(
     graphics, "lines" = "lines.default", "points" = "points.default", stop())
 
-  graphics_obj = new_pcj_plot_object(func, args, data)
+  graphics_obj = new_pcj_plot_object(func, args, data, object)
 
   if (add) {
     return(graphics_obj)
@@ -498,7 +497,7 @@ plot_prior_ = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
 
     plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
@@ -528,7 +527,7 @@ plot_prior_predictive_ = function(
     meta = list()
     e = list(simpleError('"object$prior_study" exited with errors'))
     w = list()
-    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
   }
 
   stat = get_result(object)$stat
@@ -581,7 +580,7 @@ plot_prior_predictive_ = function(
     meta = list(result = list(stat = stat_obj_))
     e = get_error(stat_obj_)
     w = get_warning(stat_obj_)
-    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
   }
 
   stat_obj = recursive_unclass(get_result(stat_obj_), 5L) # TODO adjust depth
@@ -591,7 +590,7 @@ plot_prior_predictive_ = function(
     meta = list(result = list(stat = stat_obj_, stat_check = stat_check))
     e = stat_check
     w = get_warning(stat_obj_)
-    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
   }
 
   dens_obj = get_stat_density(stat_obj)
@@ -611,7 +610,7 @@ plot_prior_predictive_ = function(
 
     e = get_error(at_obj)
     w = c(get_warning(stat_obj_), get_warning(at_obj))
-    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
   }
 
   at = get_result(at_obj)
@@ -637,25 +636,10 @@ plot_prior_predictive_ = function(
       !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
     })
 
-    # TODO Create generalized function for re-ordering of vector arguments.
-    is_col_vec = \(k) {
-      return(is.vector(unclass(k), mode = "any") && is.atomic(unclass(k)))
-    }
-
-    if (graphics == "points" && "col" %in% names(dots) &&
-        is_col_vec(dots$col) && length(dots$col) > 1L)
+    if (graphics == "points")
     {
-      # Re-order "col".
-      stopifnot(length(dots$col) <= length(at))
-      adj_col = dots$col
-      col_class = class(adj_col)
-      adj_col = unclass(adj_col)
-      if (length(adj_col) < length(at))
-        adj_col = rep_len(adj_col, length(at))
-
-      adj_col = adj_col[at_order]
-      class(adj_col) = col_class
-      dots$col = adj_col
+      point_params = c("col", "pch", "bg", "lwd", "lty")
+      dots = fix_vec(point_params, dots, at_order, at)
     }
   }
 
@@ -795,7 +779,7 @@ plot_prior_predictive_ = function(
         get_warning(at_obj))
 
   e = list()
-  graphics_obj = new_pcj_plot_object(func, args, data, e, w)
+  graphics_obj = new_pcj_plot_object(func, args, data, object, e, w)
 
   if (add) {
     return(graphics_obj)
@@ -835,7 +819,7 @@ plot_prior_predictive_ = function(
     args = c(list(x = NULL, y = NULL), args)
 
     # TODO set error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
     plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
     return(plot_obj)
@@ -864,7 +848,7 @@ plot_posterior_ = function(
     meta = list()
     e = list(simpleError('The model exited with errors'))
     w = list()
-    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
   }
 
   stat = get_result(object)$stat
@@ -915,8 +899,7 @@ plot_posterior_ = function(
     meta = list(result = list(stat = stat_obj_))
     e = get_error(stat_obj_)
     w = get_warning(stat_obj_)
-    #browser()
-    return(new_pcj_plot_object(NULL, NULL, meta, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
   }
 
   stat_obj = recursive_unclass(get_result(stat_obj_), 5L) # TODO adjust depth
@@ -927,7 +910,7 @@ plot_posterior_ = function(
     e = stat_check
     w = get_warning(stat_obj_)
     #browser()
-    return(new_pcj_plot_object(NULL, NULL, data, e, w))
+    return(new_pcj_plot_object(NULL, NULL, data, object, e, w))
   }
 
   at = NULL
@@ -943,7 +926,7 @@ plot_posterior_ = function(
 
     e = get_error(at_obj)
     w = c(get_warning(stat_obj_), get_warning(at_obj))
-    return(new_pcj_plot_object(NULL, NULL, data, e, w))
+    return(new_pcj_plot_object(NULL, NULL, data, object, e, w))
   }
 
   at = get_result(at_obj)
@@ -967,6 +950,11 @@ plot_posterior_ = function(
     stopifnot(exprs = {
       !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
     })
+
+    if (graphics == "points") {
+      point_params = c("col", "pch", "bg", "lwd", "lty")
+      dots = fix_vec(point_params, dots, at_order, at)
+    }
   }
 
   dens_obj = get_stat_density(stat_obj)
@@ -1056,7 +1044,6 @@ plot_posterior_ = function(
       {
         lower = max(xlim[1L], var_bounds$lower, na.rm = FALSE)
         xy = list(x = c(lower, xy$x), y = c(0L, xy$y))
-        ##browser()
         rm(lower)
       }
       if (fill_zero_right && !is_right_cut &&
@@ -1064,7 +1051,6 @@ plot_posterior_ = function(
       {
         upper = min(xlim[2L], var_bounds$upper, na.rm = FALSE)
         xy = list(x = c(xy$x, upper), y = c(xy$y, 0L))
-        ##browser()
         rm(upper)
       }
     }
@@ -1118,7 +1104,7 @@ plot_posterior_ = function(
   e = list()
   w_ = get_warning(object)
   w = c(w_, get_warning(at_obj), get_warning(stat_obj_))
-  graphics_obj = new_pcj_plot_object(func, args, data, e, w)
+  graphics_obj = new_pcj_plot_object(func, args, data, object, e, w)
 
   if (add) {
     return(graphics_obj)
@@ -1157,7 +1143,7 @@ plot_posterior_ = function(
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     # TODO add error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
     plot_obj = list(plot_default_obj, graphics_obj)
     class(plot_obj) = "pcj_plot_object_list"
     return(plot_obj)
@@ -1217,7 +1203,8 @@ plot_area = function(
   if (has_error(prior_lines)) {
     e = get_error(prior_lines)
     w = get_warning(prior_lines)
-    return(new_pcj_plot_object(NULL, NULL, get_result(prior_lines)$data, e, w))
+    return(new_pcj_plot_object(
+      NULL, NULL, get_result(prior_lines)$data, object, e, w))
   }
 
   x_ = get_result(prior_lines)$args$x
@@ -1271,7 +1258,7 @@ plot_area = function(
   args = c(list(x = x, y = y), args)
   e = list()
   w = get_warning(prior_lines)
-  polygon_obj = new_pcj_plot_object("polygon", args, data, e, w)
+  polygon_obj = new_pcj_plot_object("polygon", args, data, object, e, w)
 
   if (add) {
     return(polygon_obj)
@@ -1310,12 +1297,70 @@ plot_area = function(
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     # TODO add error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
 
     plot_obj = list(plot_default_obj, polygon_obj)
     class(plot_obj) = "pcj_plot_object_list"
     return(plot_obj)
   }
+}
+
+
+#' @export
+points.pcj_process_capability1 = function(
+    object,
+    ...,
+    x,
+    distribution,
+    at,
+    offset
+  )
+{
+  stopifnot(exprs = {
+    is.pcj_process_capability1(object)
+    vek::is_chr_vec_xb1(x)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+  })
+
+  func = switch(
+    distribution,
+    "prior" = plot_prior,
+    "prior_predictive" = plot_prior_predictive,
+    "posterior" = plot_posterior,
+    stop()
+  )
+
+  return(func(object, "points", ..., x = x))
+}
+
+
+#' @export
+lines.pcj_process_capability1 = function(
+    object,
+    ...,
+    x,
+    distribution,
+    at,
+    offset
+  )
+{
+  stopifnot(exprs = {
+    is.pcj_process_capability1(object)
+    vek::is_chr_vec_xb1(x)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+  })
+
+  func = switch(
+    distribution,
+    "prior" = plot_prior,
+    "prior_predictive" = plot_prior_predictive,
+    "posterior" = plot_posterior,
+    stop()
+  )
+
+  return(func(object, "lines", ..., x = x))
 }
 
 
@@ -1618,7 +1663,7 @@ plot_sequential_procedure = function(
 
     args = list(side = 2L, at = transform_y, labels = labels) |> c(args)
     data = named_list_rm(data, c("side", "at", "labels"))
-    axis_plot_obj = new_pcj_plot_object("axis", args, data)
+    axis_plot_obj = new_pcj_plot_object("axis", args, data, object)
 
     plots = c(list(axis_plot_obj), plots)
 
@@ -1645,7 +1690,7 @@ plot_sequential_procedure = function(
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
     # TODO add error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
 
     plots = c(list(plot_default_obj), plots)
   }
@@ -1690,17 +1735,11 @@ create_histogram_density_func = function(
 }
 
 
-#new_pcj_plot_object = function(func, args, data) {
-#  structure(
-#    list(func = func, args = args, data = data),
-#    class = "pcj_plot_object"
-#  )
-#}
-
 new_pcj_plot_object = function(
     func,
     args,
     data,
+    object,
     error = list(),
     warnings = list()
   )
@@ -1708,7 +1747,7 @@ new_pcj_plot_object = function(
   structure(
     list(
       condition = c(error, warnings),
-      result = list(func = func, args = args, data = data)
+      result = list(func = func, args = args, data = data, object = object)
     ),
     class = "pcj_plot_object"
   )
@@ -1765,6 +1804,79 @@ preprocess_pcj_plot_object = function(object) {
 
 
 #' @export
+c.pcj_plot_object = function(object, ...) {
+  stopifnot(exprs = {
+    is.pcj_plot_object(object)
+    ...length() > 0L
+    is.null(...names())
+  })
+
+  if (...length() == 1L) {
+    stopifnot(exprs = {
+      is.pcj_plot_object(...elt(1L)) || is.pcj_plot_object_list(...elt(1L))
+    })
+
+    o = ...elt(1L)
+
+    if (is.pcj_plot_object(o)) {
+      return(structure(
+        list(object, o),
+        class = "pcj_plot_object_list"
+      ))
+    } else if (is.pcj_plot_object_list(o)) {
+      o_ = c(list("temp"), unclass(o))
+      o_[[1L]] = object
+      class(o_) = "pcj_plot_object_list"
+      return(o_)
+    } else {
+      stop()
+    }
+  } else {
+    o = object
+    for (i in 1:(...length()))
+      o = c(o, ...elt(i))
+
+    return(o)
+  }
+}
+
+
+#' @export
+c.pcj_plot_object_list = function(object, ...) {
+  stopifnot(exprs = {
+    is.pcj_plot_object_list(object)
+    ...length() > 0L
+    is.null(...names())
+  })
+
+  if (...length() == 1L) {
+    stopifnot(exprs = {
+      is.pcj_plot_object(...elt(1L)) || is.pcj_plot_object_list(...elt(1L))
+    })
+
+    o = ...elt(1L)
+
+    if (is.pcj_plot_object(o)) {
+      object[[length(object) + 1L]] = o
+      return(object)
+    } else if (is.pcj_plot_object_list(o)) {
+      o_ = c(unclass(object), unclass(o))
+      class(o_) = "pcj_plot_object_list"
+      return(o_)
+    } else {
+      stop()
+    }
+  } else {
+    o = object
+    for (i in 1:(...length()))
+      o = c(o, ...elt(i))
+
+    return(o)
+  }
+}
+
+
+#' @export
 plot.pcj_plot_object = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
@@ -1793,6 +1905,78 @@ plot.pcj_plot_object = function(object) {
   do.call(func, get_result(obj)$args)
 
   return(invisible(object))
+}
+
+
+pcj_plot_object_plot_dist = function(func_name, object, ...) {
+  stopifnot(exprs = {
+    is.pcj_plot_object(object) || is.pcj_plot_object_list(object)
+    vek::is_chr_vec_xb1(func_name)
+    func_name %in% c("plot_prior", "plot_prior_predictive", "plot_posterior")
+  })
+
+  func = switch(
+    func_name,
+    "plot_prior" = plot_prior,
+    "plot_prior_predictive" = plot_prior_predictive,
+    "plot_posterior" = plot_posterior,
+    stop()
+  )
+
+  if (is.pcj_plot_object(object))
+    obj = object
+  else if (is.pcj_plot_object_list(object))
+    obj = object[[length(object)]]
+  else
+    stop()
+
+  args = c(list(get_result(obj)$object), list(...))
+
+  if ((!"add" %in% names(args)))
+    args$add = TRUE
+
+  if (!("x" %in% names(args)))
+    args$x = get_result(obj)$data$x_
+
+  b = do.call(func, args)
+
+  return(c(object, b))
+}
+
+
+#' @export
+plot_prior.pcj_plot_object = function(object, ...) {
+  return(pcj_plot_object_plot_dist("plot_prior", object, ...))
+}
+
+
+#' @export
+plot_prior_predictive.pcj_plot_object = function(object, ...) {
+  return(pcj_plot_object_plot_dist("plot_prior_predictive", object, ...))
+}
+
+
+#' @export
+plot_posterior.pcj_plot_object = function(object, ...) {
+  return(pcj_plot_object_plot_dist("plot_posterior", object, ...))
+}
+
+
+#' @export
+plot_prior.pcj_plot_object_list = function(object, ...) {
+  return(pcj_plot_object_plot_dist("plot_prior", object, ...))
+}
+
+
+#' @export
+plot_prior_predictive.pcj_plot_object_list = function(object, ...) {
+  return(pcj_plot_object_plot_dist("plot_prior_predictive", object, ...))
+}
+
+
+#' @export
+plot_posterior.pcj_plot_object_list = function(object, ...) {
+  return(pcj_plot_object_plot_dist("plot_posterior", object, ...))
 }
 
 
@@ -2212,5 +2396,52 @@ check_offset = function(x, label = "offset") {
   }
 
   return(bag)
+}
+
+
+fix_vec = function(name, dots, order, y) {
+  stopifnot(exprs = {
+    vek::is_chr_vec_xb(name)
+    is_all_unique(name)
+    is_uniquely_named_list(dots)
+  })
+
+  present_names = name[name %in% names(dots)]
+  if (length(present_names) == 0L)
+    return(dots)
+
+  for (x in present_names) {
+    dots[[x]] = expand_and_reorder_vec_if_needed(dots[[x]], order, y)
+  }
+
+  return(dots)
+}
+
+
+#is_col_vec = \(k) {
+#  return(is.vector(unclass(k), mode = "any") && is.atomic(unclass(k)))
+#}
+expand_and_reorder_vec_if_needed = function(x, order, y) {
+  stopifnot(exprs = {
+    # TODO check x is vec
+    # TODO check y is vec
+    vek::is_int_vec_x(order)
+    length(order) == length(y)
+    length(x) <= length(y)
+  })
+
+  if (length(x) > 1L) {
+    adj_x = x
+    x_class = class(adj_x)
+    adj_x = unclass(adj_x)
+    if (length(adj_x) < length(y))
+      adj_x = rep_len(adj_x, length(y))
+
+    adj_x = adj_x[order]
+    class(adj_x) = x_class
+    return(adj_x)
+  } else {
+    return(x)
+  }
 }
 

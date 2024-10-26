@@ -128,6 +128,8 @@ PcjProcessCapability1 = R6::R6Class(
 
         if (!missing(data))
           args$data = data
+        if (!missing(pci_params))
+          args$pci_params = pci_params
         if (!missing(prior_mu))
           args$prior_mu = prior_mu
         if (!missing(prior_sigma))
@@ -280,5 +282,35 @@ get_data.PcjProcessCapability1 = function(object) {
 #' @export
 variable.names.PcjProcessCapability1 = function(object, distribution) {
   return(variable.names(object$content, distribution))
+}
+
+
+#' @export
+plot_prior.PcjProcessCapability1 = function(object, ..., x, offset = c(0L, 0L)){
+  return(object$plot_prior(x, ..., offset = offset))
+}
+
+
+#' @export
+plot_prior_predictive.PcjProcessCapability1 = function(
+    object,
+    ...,
+    x,
+    offset = c(0L, 0L)
+  )
+{
+  return(object$plot_prior_predictive(x, ..., offset = offset))
+}
+
+
+#' @export
+plot_posterior.PcjProcessCapability1 = function(
+    object,
+    ...,
+    x,
+    offset = c(0L, 0L)
+  )
+{
+  return(object$plot_posterior(x, ..., offset = offset))
 }
 

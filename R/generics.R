@@ -36,9 +36,9 @@ has_error = function(object, ...) {
 
 
 has_warning = function(object, ...) {
-  e = get_warning(object, ...)
-  stopifnot(is_list(e))
-  return(!is_empty(e))
+  w = get_warning(object, ...)
+  stopifnot(is_list(w))
+  return(!is_empty(w))
 }
 
 

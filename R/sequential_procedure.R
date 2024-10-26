@@ -97,6 +97,8 @@ get_result.pcj_sequential_procedure = get_result_
 summary.pcj_sequential_procedure = function(object, ...) {
   stopifnot(is.pcj_sequential_procedure(object))
 
+  # TODO remove prior predictive summaries from all but the last model
+  # TODO add data_size column
   results = lapply(get_result(object)$fit, summary)
 
   dfs = lapply(results, get_result)

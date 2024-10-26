@@ -1,5 +1,5 @@
 
-#' @importFrom ggplot2 ggplot_add
+
 #'
 # col = colour / fill
 # lty = linetype 0:6
@@ -77,32 +77,6 @@ gg_build = function(object) {
 }
 
 
-# TODO check if plot.default
-#' @export
-ggplot_add.pcj_plot_object_list = function(object, plot, object_name) {
-  stopifnot(exprs = {
-    is.pcj_plot_object_list(object)
-    inherits(plot, "ggplot", which = FALSE)
-  })
-
-  ggobj = gg_build(object)
-  return(plot + ggobj)
-}
-
-
-# TODO check if plot.default
-#' @export
-ggplot_add.pcj_plot_object = function(object, plot, object_name) {
-  stopifnot(exprs = {
-    is.pcj_plot_object(object)
-    inherits(plot, "ggplot", which = FALSE)
-  })
-
-  ggobj = gg_build(object)
-  return(plot + ggobj)
-}
-
-
 get_aes_name_map = function() {
   return(c(
     col = "colour",
@@ -139,7 +113,7 @@ plot_default_to_ggplot2 = function(object) {
     coord_args = c(coord_args, list(ylim = args$ylim))
 
   coord_obj = do.call(ggplot2::coord_cartesian, coord_args)
-  obj = obj + coord_obj #ggplot2::ggplot_add(obj, coord_obj, "")
+  obj = obj + coord_obj
 
   ann = TRUE
   if ("ann" %in% keys) {
@@ -160,7 +134,7 @@ plot_default_to_ggplot2 = function(object) {
       labs_args = c(labs_args, list(subtitle = args$sub))
 
     labs_obj = do.call(ggplot2::labs, labs_args)
-    obj = obj + labs_obj #ggplot2::ggplot_add(obj, labs_obj, "")
+    obj = obj + labs_obj
   }
 
   axes = TRUE

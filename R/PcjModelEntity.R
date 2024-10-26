@@ -32,6 +32,7 @@ PcjModelEntity = R6::R6Class(
     },
 
     summary = function() {
+      # TODO throws error
       o = summary(private$parent_)
       df = get_result(o)
       stopifnot(exprs = {
@@ -65,6 +66,18 @@ PcjModelEntity = R6::R6Class(
         private$distribution_,
         value
       ))
+    },
+
+    plot = function(...) {
+      f = switch(
+        private$distribution_,
+        "prior" = plot_prior,
+        "prior_predictive" = plot_prior_predictive,
+        "posterior" = plot_posterior,
+        stop()
+      )
+
+      return(f(private$parent_, ..., x = private$x_))
     }
   )
 )
