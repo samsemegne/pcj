@@ -235,13 +235,15 @@ summary.pcj_process_capability1 = function(object) {
   stopifnot(is.pcj_process_capability1(object))
 
   res = get_result(object)
+  stat = res$stat
+
   o1 = NULL
   if (is.pcj_prior_predictive(res$prior_study))
-    o1 = summary(res$prior_study)
+    o1 = summary(res$prior_study, stat)
 
   o2 = NULL
   if (is.pcj_model(get_result(object)$pcj_model))
-    o2 = summary(res$pcj_model)
+    o2 = summary(res$pcj_model, stat)
 
   if (!is.null(o1) && !is.null(o2))
     df = rbind.data.frame(get_result(o1), get_result(o2))

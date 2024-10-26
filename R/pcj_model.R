@@ -269,49 +269,75 @@ get_sample.pcj_model = function(object, x, chain) {
 # Currently, statistics are obtained using JAGS (coda::mcmc_list specifically),
 # however 'stat' will be used later for consistency and extensibility.
 #' @export
-summary.pcj_model = function(object) {
-  stopifnot(is.pcj_model(object))
+summary.pcj_model = function(object, stat) {
+  stopifnot(exprs = {
+    is.pcj_model(object)
+    is_empty(check_stat(stat, "stat"))
+  })
 
-  cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5", "q.75",
-           "q.975")
+  #cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5", "q.75",
+  #         "q.975")
+  #
+  #f = function() {
+  #  x = summary(get_result(object)$samples)
+  #
+  #  stats_df = as.data.frame(x$statistics) # TODO defaults
+  #  stats_df = cbind(x = row.names(stats_df), stats_df)
+  #
+  #  q_df = as.data.frame(x$quantiles)
+  #  colnames(q_df) = gsub("%", "", colnames(q_df))
+  #  q = as.numeric(colnames(q_df)) * .01
+  #  q = as.character(q)
+  #  q = sub("0\\.", "\\.", q)
+  #  colnames(q_df) = paste0("q", q, collapse = NULL, recycle0 = FALSE)
+  #
+  #
+  #  df = cbind(stats_df, q_df)
+  #  colnames(df) = gsub("-|\\s+|^$", "_", colnames(df)) |> tolower()
+  #  row.names(df) = 1:nrow(df)
+  #  df = subset.data.frame(df, select = -c(naive_se, time_series_se))
+  #
+  #  df$distribution = "posterior"
+  #
+  #  df = subset.data.frame(df, select = cols)
+  #  stopifnot(all(colnames(df) == cols, na.rm = FALSE))
+  #
+  #  return(df)
+  #}
+  #
+  #if (!has_error(object)) {
+  #  res = pcj_safely(f())
+  #  res$condition = c(res$condition, get_condition(object))
+  #} else {
+  #  var_names = variable.names(object, "posterior")
+  #  df = matrix(NaN, nrow = length(var_names), ncol = length(cols)) |>
+  #    as.data.frame()
+  #
+  #  colnames(df) = cols
+  #  df$x = var_names
+  #  df$distribution = "posterior"
+  #
+  #  res = list(
+  #    condition = get_condition(object),
+  #    output = list(),
+  #    result = df
+  #  )
+  #}
+  #
+  #class(res) = "pcj_model_summary"
 
-  f = function() {
-    x = summary(get_result(object)$samples)
 
-    stats_df = as.data.frame(x$statistics) # TODO defaults
-    stats_df = cbind(x = row.names(stats_df), stats_df)
+  var_name = variable.names(object, "posterior")
 
-    q_df = as.data.frame(x$quantiles)
-    colnames(q_df) = gsub("%", "", colnames(q_df))
-    q = as.numeric(colnames(q_df)) * .01
-    q = as.character(q)
-    q = sub("0\\.", "\\.", q)
-    colnames(q_df) = paste0("q", q, collapse = NULL, recycle0 = FALSE)
+  if (has_error(object)) {
+    cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5",
+             "q.75", "q.975")
 
+    var_name = variable.names(object, "posterior")
 
-    df = cbind(stats_df, q_df)
-    colnames(df) = gsub("-|\\s+|^$", "_", colnames(df)) |> tolower()
-    row.names(df) = 1:nrow(df)
-    df = subset.data.frame(df, select = -c(naive_se, time_series_se))
-
-    df$distribution = "posterior"
-
-    df = subset.data.frame(df, select = cols)
-    stopifnot(all(colnames(df) == cols, na.rm = FALSE))
-
-    return(df)
-  }
-
-  if (!has_error(object)) {
-    res = pcj_safely(f())
-    res$condition = c(res$condition, get_condition(object))
-  } else {
-    var_names = variable.names(object, "posterior")
-    df = matrix(NaN, nrow = length(var_names), ncol = length(cols)) |>
-      as.data.frame()
-
+    df = matrix(NaN, nrow = length(var_name), ncol = length(cols))
     colnames(df) = cols
-    df$x = var_names
+    df$x = var_name
     df$distribution = "posterior"
 
     res = list(
@@ -319,10 +345,91 @@ summary.pcj_model = function(object) {
       output = list(),
       result = df
     )
+
+    class(res) = "pcj_model_summary"
+    return(res)
   }
 
-  class(res) = "pcj_model_summary"
-  return(res)
+  res = lapply(var_name, \(x) {
+    samples = get_sample(object, x, "all")
+
+    stat_res_ = pcj_safely(stat(samples))
+    stat_res = recursive_unclass(get_result(stat_res_), 5L) # TODO
+    stat_check = check_stat_result(stat_res, "stat")
+
+    at = c("mean", "q.025", "q.25", "q.5", "q.75", "q.975")
+    if (is_empty(stat_check)) {
+      at_res = get_at(at, samples, stat_res_)
+      sd_res = obtain_stat_sd(samples, stat_res)
+    } else {
+      cond = list(simpleError("Invalid stat result"))
+      val = rep_len(NaN, length(at))
+      names(val) = at
+
+      at_res = structure(list(
+        condition = cond,
+        output = list(),
+        result = val
+      ), class = "pcj_result")
+
+      sd_res = structure(list(
+        condition = cond,
+        output = list(),
+        result = NaN
+      ), class = "pcj_result")
+    }
+
+    return(list(
+      x = x,
+      at = at_res,
+      sd = sd_res,
+      stat = stat_res_,
+      stat_check = stat_check
+    ))
+  })
+
+  df_rows = lapply(res, \(k) {
+    at = get_result(k$at)
+    return(new_df(
+      x = k$x,
+      distribution = "posterior",
+      mean =  at["mean"],
+      sd =    get_result(k$sd),
+      q.025 = at["q.025"],
+      q.25 =  at["q.25"],
+      q.5 =   at["q.5"],
+      q.75 =  at["q.75"],
+      q.975 = at["q.975"]
+    ))
+  })
+
+  df = do.call(rbind.data.frame, df_rows) # TODO rbind.data.frame set params
+  row.names(df) = 1:nrow(df)
+
+  cond_ = lapply(res, \(k) {
+    return(c(
+      get_condition(k$at),
+      get_condition(k$sd),
+      get_condition(k$stat),
+      k$stat_check
+    ))
+  })
+
+  cond = list()
+  for (k in cond_)
+    cond = c(cond, k)
+
+  cond = c(get_condition(object), cond)
+
+  summary_obj = list(
+    condition = cond,
+    output = list(),
+    result = df
+  )
+
+  class(summary_obj) = "pcj_model_summary"
+
+  return(summary_obj)
 }
 
 
