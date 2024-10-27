@@ -168,7 +168,7 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
   var_name = variable.names(object, "prior_predictive")
 
   if (has_error(object)) {
-    cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5",
+    cols = c("x", "distribution", "mean", "median", "sd", "q.025", "q.25", "q.5",
              "q.75", "q.975")
 
     var_name = variable.names(object, "prior_predictive")
@@ -189,13 +189,14 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
   }
 
   res = lapply(var_name, \(x) {
+
     samples = get_sample(object, x)
 
     stat_res_ = pcj_safely(default_stats(samples))
     stat_res = recursive_unclass(get_result(stat_res_), 5L) # TODO
     stat_check = check_stat_result(stat_res, "stat")
 
-    at = c("mean", "q.025", "q.25", "q.5", "q.75", "q.975")
+    at = c("mean", "median", "q.025", "q.25", "q.5", "q.75", "q.975")
     if (is_empty(stat_check)) {
       at_res = get_at(at, samples, stat_res_)
       sd_res = obtain_stat_sd(samples, stat_res)
@@ -232,6 +233,7 @@ summary.pcj_prior_predictive = function(object, stat = NULL) {
       x = k$x,
       distribution = "prior_predictive",
       mean =  at["mean"],
+      median =  at["median"],
       sd =    get_result(k$sd),
       q.025 = at["q.025"],
       q.25 =  at["q.25"],
@@ -330,46 +332,36 @@ probability.pcj_prior_predictive = function(object, x, value, stat = NULL) {
 }
 
 
-#mean.pcj_prior_predictive = function(object, x, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_prior_predictive(object)
-#    vek::is_chr_vec_xb1(x)
-#    x %in% variable.names(object, "prior_predictive")
-#  })
-#
-#  if (is.null(stat))
-#    stat = default_stats
-#
-#  stat_check = check_stat(stat, "stat")
-#  if (!is_empty(stat_check))
-#    stop(stat_check[[1L]])
-#
-#  samples = get_sample(object, x)
-#  stat_res = obtain_stat_result(samples, stat)
-#
-#  return(stat_mode_("mean", samples, stat_res))
-#}
+#' @export
+mean.pcj_prior_predictive = function(object, x, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_prior_predictive(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior_predictive")
+    is_empty(check_stat(stat, "stat"))
+  })
+
+  samples = get_sample(object, x)
+  stat_res = pcj_safely(stat(samples))
+
+  return(stat_mode_("mean", samples, stat_res))
+}
 
 
-#median.pcj_prior_predictive = function(object, x, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_prior_predictive(object)
-#    vek::is_chr_vec_xb1(x)
-#    x %in% variable.names(object, "prior_predictive")
-#  })
-#
-#  if (is.null(stat))
-#    stat = default_stats
-#
-#  stat_check = check_stat(stat, "stat")
-#  if (!is_empty(stat_check))
-#    stop(stat_check[[1L]])
-#
-#  samples = get_sample(object, x)
-#  stat_res = obtain_stat_result(samples, stat)
-#
-#  return(stat_mode_("median", samples, stat_res))
-#}
+#' @export
+median.pcj_prior_predictive = function(object, x, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_prior_predictive(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "prior_predictive")
+    is_empty(check_stat(stat, "stat"))
+  })
+
+  samples = get_sample(object, x)
+  stat_res = pcj_safely(stat(samples))
+
+  return(stat_mode_("median", samples, stat_res))
+}
 
 
 #' @export

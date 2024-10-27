@@ -754,7 +754,6 @@ stat_quantile_ = function(x, samples, stat_result) {
   if (!("quantile" %in% names(stat_res)))
     stop('The list returned by "stat" must contain "quantile"')
 
-  # TODO set default like with base-R, i.e. 0%, 25%, etc?
   x_ = sprintf("q%s", x)
 
   res = get_at(x_, samples, stat_result)
@@ -773,26 +772,26 @@ stat_quantile_ = function(x, samples, stat_result) {
 }
 
 
-#stat_mode_ = function(mode, samples, stat_result) {
-#  stopifnot(exprs = {
-#    vek::is_chr_vec_xb1(mode)
-#    mode %in% c("mean", "median")
-#    # TODO check samples
-#  })
-#
-#  res = get_at(mode, samples, stat_result)
-#  if (has_warning(res)) {
-#    for (w in get_warning(res))
-#      warning(w)
-#  }
-#
-#  if (has_error(res)) {
-#    stop(get_error(res)[[1L]])
-#  }
-#
-#  val = get_result(res)
-#  names(val) = NULL
-#  return(val)
-#}
+stat_mode_ = function(mode, samples, stat_result) {
+  stopifnot(exprs = {
+    vek::is_chr_vec_xb1(mode)
+    mode %in% c("mean", "median")
+    # TODO check samples
+  })
+
+  res = get_at(mode, samples, stat_result)
+  if (has_error(res)) {
+    stop(get_error(res)[[1L]])
+  }
+
+  if (has_warning(res)) {
+    for (w in get_warning(res))
+      warning(w)
+  }
+
+  val = get_result(res)
+  names(val) = NULL
+  return(val)
+}
 
 

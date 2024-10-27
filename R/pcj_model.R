@@ -343,7 +343,7 @@ summary.pcj_model = function(object, stat) {
   var_name = variable.names(object, "posterior")
 
   if (has_error(object)) {
-    cols = c("x", "distribution", "mean", "sd", "q.025", "q.25", "q.5",
+    cols = c("x", "distribution", "mean", "median", "sd", "q.025", "q.25", "q.5",
              "q.75", "q.975")
 
     var_name = variable.names(object, "posterior")
@@ -364,32 +364,64 @@ summary.pcj_model = function(object, stat) {
   }
 
   res = lapply(var_name, \(x) {
-    samples = get_sample(object, x, "all")
 
-    stat_res_ = pcj_safely(stat(samples))
-    stat_res = recursive_unclass(get_result(stat_res_), 5L) # TODO
-    stat_check = check_stat_result(stat_res, "stat")
+    at = c("mean", "median", "q.025", "q.25", "q.5", "q.75", "q.975")
 
-    at = c("mean", "q.025", "q.25", "q.5", "q.75", "q.975")
-    if (is_empty(stat_check)) {
-      at_res = get_at(at, samples, stat_res_)
-      sd_res = obtain_stat_sd(samples, stat_res)
-    } else {
-      cond = list(simpleError("Invalid stat result"))
-      val = rep_len(NaN, length(at))
-      names(val) = at
+    prior = NULL
+    if (x %in% variable.names(object, "prior"))
+      prior = new_pcj_dist(get_prior(object, x))
 
+    if (!is.null(prior) && is_pcj_point_prior(prior)) {
+      at_val = rep_len(prior$value, length(at))
+      names(at_val) = at
       at_res = structure(list(
-        condition = cond,
-        output = list(),
-        result = val
-      ), class = "pcj_result")
+          condition = list(),
+          output = list(),
+          result = at_val
+        ),
+        class = "pcj_result"
+      )
 
       sd_res = structure(list(
-        condition = cond,
-        output = list(),
-        result = NaN
-      ), class = "pcj_result")
+          condition = list(),
+          output = list(),
+          result = 0L
+        ),
+        class = "pcj_result"
+      )
+
+      stat_check = list() # TODO
+      # TODO
+      stat_res_ = structure(list(condition=list(),output=list(),result=NULL),
+                            class = "pcj_result")
+
+    } else {
+      samples = get_sample(object, x, "all")
+
+      stat_res_ = pcj_safely(stat(samples))
+      stat_res = recursive_unclass(get_result(stat_res_), 5L) # TODO
+      stat_check = check_stat_result(stat_res, "stat")
+
+      if (is_empty(stat_check)) {
+        at_res = get_at(at, samples, stat_res_)
+        sd_res = obtain_stat_sd(samples, stat_res)
+      } else {
+        cond = list(simpleError("Invalid stat result"))
+        val = rep_len(NaN, length(at))
+        names(val) = at
+
+        at_res = structure(list(
+          condition = cond,
+          output = list(),
+          result = val
+        ), class = "pcj_result")
+
+        sd_res = structure(list(
+          condition = cond,
+          output = list(),
+          result = NaN
+        ), class = "pcj_result")
+      }
     }
 
     return(list(
@@ -407,6 +439,7 @@ summary.pcj_model = function(object, stat) {
       x = k$x,
       distribution = "posterior",
       mean =  at["mean"],
+      median =  at["median"],
       sd =    get_result(k$sd),
       q.025 = at["q.025"],
       q.25 =  at["q.25"],
@@ -515,32 +548,37 @@ probability.pcj_model = function(object, x, value, stat = NULL) {
 }
 
 
-#mean.pcj_model = function(object, x, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_model(object)
-#    vek::is_chr_vec_xb1(x)
-#    x %in% variable.names(object, "posterior")
-#  })
-#
-#  samples = get_sample(object, x)
-#  stat_res = obtain_stat_result(samples, stat)
-#
-#  return(stat_mode_("mean", samples, stat_res))
-#}
+#' @export
+mean.pcj_model = function(object, x, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_model(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "posterior")
+    is_empty(check_stat(stat, "stat"))
+  })
+
+  samples = get_sample(object, x, "all")
+  stat_res = pcj_safely(stat(samples))
+
+  return(stat_mode_("mean", samples, stat_res))
+}
 
 
-#median.pcj_model = function(object, x, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_model(object)
-#    vek::is_chr_vec_xb1(x)
-#    x %in% variable.names(object, "posterior")
-#  })
-#
-#  samples = get_sample(object, x)
-#  stat_res = obtain_stat_result(samples, stat)
-#
-#  return(stat_mode_("median", samples, stat_res))
-#}
+#' @export
+median.pcj_model = function(object, x, stat = NULL) {
+  stopifnot(exprs = {
+    is.pcj_model(object)
+    vek::is_chr_vec_xb1(x)
+    x %in% variable.names(object, "posterior")
+    is_empty(check_stat(stat, "stat"))
+  })
+
+  samples = get_sample(object, x, "all")
+  stat_res = pcj_safely(stat(samples))
+
+  return(stat_mode_("median", samples, stat_res))
+}
+
 
 #' @export
 quantile.pcj_model = function(object, x, value, stat = NULL) {

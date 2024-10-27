@@ -97,12 +97,23 @@ get_result.pcj_sequential_procedure = get_result_
 summary.pcj_sequential_procedure = function(object, ...) {
   stopifnot(is.pcj_sequential_procedure(object))
 
-  # TODO remove prior predictive summaries from all but the last model
-  # TODO add data_size column
-  results = lapply(get_result(object)$fit, summary)
+  results = lapply(get_result(object)$fit, \(x) {
+    sumres = summary(x)
+
+    # Add a "data_size" column.
+    df = get_result(sumres)
+    data_size = length(get_data(x))
+    df = cbind(data_size = data_size, df)
+    sumres$result = df
+
+    return(sumres)
+  })
 
   dfs = lapply(results, get_result)
   df = do.call(rbind.data.frame, dfs)
+
+  # TODO Remove prior_predictive rows from all but the last model.
+
   row.names(df) = 1:nrow(df)
 
   cond_ = lapply(results, get_condition)

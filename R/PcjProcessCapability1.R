@@ -33,12 +33,12 @@ PcjProcessCapability1 = R6::R6Class(
         stop(runtimeError("Runtime error"))
     },
 
-    condition = function(value) {
-      if (missing(value))
-        return(get_condition(self$content))
-      else
-        stop(runtimeError("Runtime error"))
-    },
+    #condition = function(value) {
+    #  if (missing(value))
+    #    return(get_condition(self$content))
+    #  else
+    #    stop(runtimeError("Runtime error"))
+    #},
 
     error = function(value) {
       if (missing(value))
@@ -54,19 +54,19 @@ PcjProcessCapability1 = R6::R6Class(
         stop(runtimeError("Runtime error"))
     },
 
-    message = function(value) {
-      if (missing(value))
-        return(get_message(self$content))
-      else
-        stop(runtimeError("Runtime error"))
-    },
+    #message = function(value) {
+    #  if (missing(value))
+    #    return(get_message(self$content))
+    #  else
+    #    stop(runtimeError("Runtime error"))
+    #},
 
-    output = function(value) {
-      if (missing(value))
-        return(get_output(self$content))
-      else
-        stop(runtimeError("Runtime error"))
-    },
+    #output = function(value) {
+    #  if (missing(value))
+    #    return(get_output(self$content))
+    #  else
+    #    stop(runtimeError("Runtime error"))
+    #},
 
     prior = function(value) {
       if (missing(value))
@@ -228,15 +228,27 @@ PcjProcessCapability1 = R6::R6Class(
 
 
 #' @export
-get_condition.PcjProcessCapability1 = function(object) return(object$condition)
+get_condition.PcjProcessCapability1 = function(object) {
+  return(get_condition(object$content))
+}
+
+
 #' @export
 get_error.PcjProcessCapability1 = function(object) return(object$error)
 #' @export
 get_warning.PcjProcessCapability1 = function(object) return(object$warning)
 #' @export
-get_message.PcjProcessCapability1 = function(object) return(object$message)
+get_message.PcjProcessCapability1 = function(object) {
+  return(get_message(object$content))
+}
+
+
 #' @export
-get_output.PcjProcessCapability1 = function(object) return(object$output)
+get_output.PcjProcessCapability1 = function(object) {
+  return(get_output(object$content))
+}
+
+
 #' @export
 get_result.PcjProcessCapability1 = function(object) {
   return(get_result(object$content))
@@ -270,6 +282,18 @@ probability.PcjProcessCapability1 = function(object, x, distribution, value) {
 #' @export
 quantile.PcjProcessCapability1 = function(object, x, distribution, value) {
   return(object$quantile(x, distribution, value))
+}
+
+
+#' @export
+mean.PcjProcessCapability1 = function(object, x, distribution) {
+  return(mean(object$content, x, distribution))
+}
+
+
+#' @export
+median.PcjProcessCapability1 = function(object, x, distribution) {
+  return(median(object$content, x, distribution))
 }
 
 

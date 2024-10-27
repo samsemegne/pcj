@@ -338,64 +338,56 @@ probability.pcj_process_capability1 = function(object, x, distribution, value) {
 }
 
 
-#mean.pcj_process_capability1 = function(object, x, distribution, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_process_capability1(object)
-#    vek::is_chr_vec_xb1(x)
-#    vek::is_chr_vec_xb1(distribution)
-#    distribution %in% c("prior", "prior_predictive", "posterior")
-#    x %in% variable.names(object, distribution)
-#  })
-#
-#  if (is.null(stat))
-#    stat = default_stats
-#
-#  stat_check = check_stat(stat, "stat")
-#  if (!is_empty(stat_check))
-#    stop(stat_check[[1L]])
-#
-#  if (distribution == "prior") {
-#    stop("mean() is currently not supported for the prior distribution")
-#  }
-#  else if (distribution == "prior_predictive") {
-#    return(mean(get_result(object)$prior_study, x, stat))
-#  }
-#  else if (distribution == "posterior") {
-#    return(mean(get_result(object)$pcj_model, x, stat))
-#  } else {
-#    stop()
-#  }
-#}
+#' @export
+mean.pcj_process_capability1 = function(object, x, distribution) {
+  stopifnot(exprs = {
+    is.pcj_process_capability1(object)
+    vek::is_chr_vec_xb1(x)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+    x %in% variable.names(object, distribution)
+  })
+
+  stat = get_result(object)$stat
+
+  if (distribution == "prior") {
+    stop("mean() is currently not supported for the prior distribution")
+  }
+  else if (distribution == "prior_predictive") {
+    return(mean(get_result(object)$prior_study, x, stat))
+  }
+  else if (distribution == "posterior") {
+    return(mean(get_result(object)$pcj_model, x, stat))
+  } else {
+    stop()
+  }
+}
 
 
-#median.pcj_process_capability1 = function(object, x, distribution, stat = NULL) {
-#  stopifnot(exprs = {
-#    is.pcj_process_capability1(object)
-#    vek::is_chr_vec_xb1(x)
-#    vek::is_chr_vec_xb1(distribution)
-#    distribution %in% c("prior", "prior_predictive", "posterior")
-#    x %in% variable.names(object, distribution)
-#  })
-#
-#  if (is.null(stat))
-#    stat = default_stats
-#
-#  stat_check = check_stat(stat, "stat")
-#  if (!is_empty(stat_check))
-#    stop(stat_check[[1L]])
-#
-#  if (distribution == "prior") {
-#    stop("median() is currently not supported for the prior distribution")
-#  }
-#  else if (distribution == "prior_predictive") {
-#    return(median(get_result(object)$prior_study, x, stat))
-#  }
-#  else if (distribution == "posterior") {
-#    return(median(get_result(object)$pcj_model, x, stat))
-#  } else {
-#    stop()
-#  }
-#}
+#' @export
+median.pcj_process_capability1 = function(object, x, distribution) {
+  stopifnot(exprs = {
+    is.pcj_process_capability1(object)
+    vek::is_chr_vec_xb1(x)
+    vek::is_chr_vec_xb1(distribution)
+    distribution %in% c("prior", "prior_predictive", "posterior")
+    x %in% variable.names(object, distribution)
+  })
+
+  stat = get_result(object)$stat
+
+  if (distribution == "prior") {
+    stop("median() is currently not supported for the prior distribution")
+  }
+  else if (distribution == "prior_predictive") {
+    return(median(get_result(object)$prior_study, x, stat))
+  }
+  else if (distribution == "posterior") {
+    return(median(get_result(object)$pcj_model, x, stat))
+  } else {
+    stop()
+  }
+}
 
 
 #' @export

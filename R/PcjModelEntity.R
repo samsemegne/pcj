@@ -1,5 +1,7 @@
 
 
+# TODO add 'root' (which is now 'parent'), and make parent the actual parent
+
 PcjModelEntity = R6::R6Class(
   "PcjModelEntity",
 
@@ -9,7 +11,25 @@ PcjModelEntity = R6::R6Class(
     distribution_ = NULL
   ),
 
-  active = list(),
+  active = list(
+    mean = function(value) {
+      if (missing(value)) {
+        o = private$parent_
+        return(mean(o, private$x_, private$distribution_))
+      } else {
+        stop(runtimeError("Runtime error"))
+      }
+    },
+
+    median = function(value) {
+      if (missing(value)) {
+        o = private$parent_
+        return(median(o, private$x_, private$distribution_))
+      } else {
+        stop(runtimeError("Runtime error"))
+      }
+    }
+  ),
 
   public = list(
     initialize = function(x, distribution, parent) {
@@ -45,6 +65,8 @@ PcjModelEntity = R6::R6Class(
         df,
         subset = x == private$x_ & distribution == private$distribution_
       )
+
+      row.names(df) = 1:nrow(df)
 
       o$result = df
       return(o)
