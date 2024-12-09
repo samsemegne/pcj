@@ -1,51 +1,32 @@
----
-title: "demo"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{demo}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-# pcj
-
-```{r setup}
+## ----setup--------------------------------------------------------------------
 library(pcj)
 
 # Default libraries.
 library(grDevices)
 library(graphics)
 library(stats)
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 set.seed(1L)
 data = stats::rnorm(30L, mean = .7, sd = 1L)
 
 plot(stats::density(data), main = "Data")
 graphics::hist(data, add = TRUE, freq = FALSE, col = NA)
 graphics::rug(data)
-```
 
-
-# The S3 Way
-
-```{r}
+## -----------------------------------------------------------------------------
 model = pcj:::new_pcj_process_capability_model1(
   data,
   pcj::new_pci_parameters1(c("C_p", "C_pk", "C_pm"), 0, -3, 3, 1),
-  #"dnorm(.7, 1)T(-2, 1.5)",
-  "dunif(-3, 3)",
+  "dnorm(.7, 1)T(-2, 1.5)",
   "dexp(1)T(1, 4)",
   pcj::new_prior_predictive_parameters(100L, 1L),
   pcj::new_rjags_parameters(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill"),
   #stat = f,
   evaluate = TRUE
 )
-```
 
-```{r}
+## -----------------------------------------------------------------------------
 if (length(get_error(model)) > 0L) {
   # ...
 }
@@ -53,16 +34,11 @@ if (length(get_error(model)) > 0L) {
 if (length(get_warning(model)) > 0L) {
   # ...
 }
-```
 
-
-## Summarizing
-
-```{r}
+## -----------------------------------------------------------------------------
 summary(model)
-```
 
-```{r}
+## -----------------------------------------------------------------------------
 mean(model, "posterior", "C_pm")
 
 stats::median(model, "posterior", "C_pm")
@@ -70,12 +46,8 @@ stats::median(model, "posterior", "C_pm")
 stats::quantile(model, "posterior", "C_pm", c(.25, .5, .75))
 
 probability(model, "posterior", "C_pm", ">= 1")
-```
 
-
-## Plotting
-
-```{r fig.height = 7.5, fig.width = 6}
+## ----fig.height = 7.5, fig.width = 6------------------------------------------
 layout(t(matrix(1:6, 2L)))
 
 pcj::plot_prior_density(model, what = "mu") 
@@ -92,13 +64,8 @@ pcj::plot_prior_predictive_density(model, what = "p_nonconformance")
 your_plot = pcj::plot_posterior_density(model, what = "p_nonconformance")
 plot(your_plot)
 
-```
 
-## The `graphics` Parameter
-
-The `graphics` parameter can be set to `"lines"` (the default), `"points"`, or `"area"`.
-
-```{r}
+## -----------------------------------------------------------------------------
 pcj::plot_posterior_density(model, what = "C_pm")
 
 pcj::plot_posterior_density(
@@ -109,35 +76,22 @@ pcj::plot_posterior_density(
 pcj::plot_posterior_density(
   model, what = "C_pm", graphics = "points", x = "mean", pch = 19L, 
   add = TRUE)
-```
 
-## Sequential Procedure
-
-
-```{r}
+## -----------------------------------------------------------------------------
 seq_proc = pcj::new_pcj_sequential_procedure(model, c(20L, 25L, 30L))
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 summary(seq_proc) |>
   get_result() |>
   subset(what == "C_pm" & distribution == "posterior")
-```
 
-
-```{r fig.height = 6, fig.width = 6}
+## ----fig.height = 6, fig.width = 6--------------------------------------------
 pcj::plot_sequential_procedure(seq_proc, what = "C_pm", display = "ridges")
-```
 
-## Plotting Using `ggplot2`
-
-```{r}
+## -----------------------------------------------------------------------------
 options(pcj.graphics_driver = "ggplot2")
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 c(
   pcj::plot_posterior_density(model, what = "C_pm"),
   pcj::plot_posterior_density(
@@ -149,19 +103,12 @@ c(
     model, what = "C_pm", graphics = "points", x = c("mean"), pch = 19L, 
     add = TRUE)
 )
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 # Reset the graphics driver.
 options(pcj.graphics_driver = "graphics")
-```
 
-
-# The R6 Way
-
-
-```{r}
+## -----------------------------------------------------------------------------
 model = pcj::PcjProcessCapabilityModel1$new()
 
 model$update(
@@ -174,10 +121,8 @@ model$update(
 )
 
 model$run()
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 if (length(model$error) > 0L) {
   # ...
 }
@@ -185,15 +130,11 @@ if (length(model$error) > 0L) {
 if (length(model$warning) > 0L) {
   # ...
 }
-```
 
-# Summarizing
-
-```{r}
+## -----------------------------------------------------------------------------
 model$summary()
-```
 
-```{r}
+## -----------------------------------------------------------------------------
 model$posterior$C_pm$mean()
 
 model$posterior$C_pm$median()
@@ -203,16 +144,11 @@ model$posterior$C_pm$quantile(c(.25, .5, .75))
 model$posterior$C_pm$probability(">= 1")
 
 model$posterior$C_pm$sd()
-```
 
-
-```{r}
+## -----------------------------------------------------------------------------
 model$prior$mu$plot_density()
-```
 
-## The `stat` Parameter
-
-```{r}
+## -----------------------------------------------------------------------------
 model$posterior$C_pm$plot_density(ylim = c(0., 1.))
 
 f = function(x) {
@@ -233,7 +169,4 @@ model$run()
 model$posterior$C_pm$plot_density(
   x = structure(">= q.001 & <= q.999", n = 1000L),
   add = TRUE, col = "steelblue", lwd = 1.5)
-```
-
-
 

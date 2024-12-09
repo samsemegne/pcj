@@ -1,4 +1,6 @@
 
+
+#'
 # col = colour / fill
 # lty = linetype 0:6
 # lwd = linewidth
@@ -21,7 +23,7 @@ pcj_plot_object_to_ggplot2 = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
   func = switch(
-    object$func,
+    get_result(object)$func,
     "plot.default" = plot_default_to_ggplot2,
     "lines.default" = lines_default_to_ggplot2,
     "points.default" = points_default_to_ggplot2,
@@ -31,7 +33,9 @@ pcj_plot_object_to_ggplot2 = function(object) {
     stop()
   )
 
-  return(func(object))
+  class(object$result) = class(object) # TODO temp
+
+  return(func(object$result))
 }
 
 
@@ -42,6 +46,33 @@ gg_add = function(parent, element) {
     return(parent)
   } else {
     return(parent + element)
+  }
+}
+
+
+gg_build = function(object) {
+  stopifnot(exprs = {
+    is.pcj_plot_object_list(object) || is.pcj_plot_object(object)
+  })
+
+  if (is.pcj_plot_object(object)) {
+    obj = preprocess_pcj_plot_object(object)
+    return(pcj_plot_object_to_ggplot2(obj))
+  }
+  else if (is.pcj_plot_object_list(object)) {
+    ggobj = NULL
+    for (obj in object) {
+      obj = preprocess_pcj_plot_object(obj)
+      ggobj_ = pcj_plot_object_to_ggplot2(obj)
+      if (is.null(ggobj))
+        ggobj = ggobj_
+      else
+        ggobj = gg_add(ggobj, ggobj_)
+    }
+
+    return(ggobj)
+  } else {
+    stop()
   }
 }
 
@@ -82,7 +113,7 @@ plot_default_to_ggplot2 = function(object) {
     coord_args = c(coord_args, list(ylim = args$ylim))
 
   coord_obj = do.call(ggplot2::coord_cartesian, coord_args)
-  obj = obj + coord_obj #ggplot2::ggplot_add(obj, coord_obj, "")
+  obj = obj + coord_obj
 
   ann = TRUE
   if ("ann" %in% keys) {
@@ -103,7 +134,7 @@ plot_default_to_ggplot2 = function(object) {
       labs_args = c(labs_args, list(subtitle = args$sub))
 
     labs_obj = do.call(ggplot2::labs, labs_args)
-    obj = obj + labs_obj #ggplot2::ggplot_add(obj, labs_obj, "")
+    obj = obj + labs_obj
   }
 
   axes = TRUE
@@ -195,7 +226,7 @@ arrows_to_ggplot2 = function(object) {
 points_default_to_ggplot2 = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
-  dots = list_get(object$args, c("col", "lty", "lwd", "lend"))
+  dots = list_get(object$args, c("pch", "col", "bg", "lty", "lwd", "lend"))
   points_map = c(
     pch = "shape",
     col = "colour",
@@ -336,7 +367,7 @@ polygon_to_ggplot2 = function(object) {
 
 #data = NULL,
 #stat = "identity",
-#position = "identity",
+#display = "identity",
 #na.rm = FALSE,
 #orientation = NA,
 #show.legend = NA,
@@ -345,3 +376,4 @@ polygon_to_ggplot2 = function(object) {
 list_get = function(x, entries) {
   return(x[names(x) %in% entries])
 }
+

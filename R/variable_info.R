@@ -21,7 +21,7 @@ new_bounds = function(
 }
 
 
-get_var_info = function() {
+get_variable_info = function() {
 
   new_df = function(...) {
     return(data.frame(
@@ -53,8 +53,8 @@ get_var_info = function() {
   info__p_nonconformance = new_df(
     var_id = "p_nonconformance",
     name_r = "p_nonconformance",
-    name_latex = "\\text{P}(\\text{Nonconformance})",
-    name_r_expr = "P(Nonconformance)",
+    name_latex = "\\text{Proportion Nonconformance}",
+    name_r_expr = "Proportion~Nonconformance",
     attributes = I(list(
       new_bounds("p_nonconformance", 0L, TRUE, 1L, TRUE)
     ))
@@ -63,8 +63,8 @@ get_var_info = function() {
   info__p_nonconformance_below = new_df(
     var_id = "p_nonconformance_below",
     name_r = "p_nonconformance_below",
-    name_latex = "\\text{P}(\\text{Nonconformance Below})",
-    name_r_expr = "P(Nonconformance~Below)",
+    name_latex = "\\text{Proportion Nonconformance Below}",
+    name_r_expr = "Proportion~Nonconformance~Below)",
     attributes = I(list(
       new_bounds("p_nonconformance", 0L, TRUE, 1L, TRUE)
     ))
@@ -73,8 +73,8 @@ get_var_info = function() {
   info__p_nonconformance_above = new_df(
     var_id = "p_nonconformance_above",
     name_r = "p_nonconformance_above",
-    name_latex = "\\text{P}(\\text{Nonconformance Above})",
-    name_r_expr = "P(Nonconformance~Above)",
+    name_latex = "\\text{Proportion Nonconformance Above})",
+    name_r_expr = "Proportion~Nonconformance~Above",
     attributes = I(list(
       new_bounds("p_nonconformance_above", 0L, TRUE, 1L, TRUE)
     ))

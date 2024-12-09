@@ -1,4 +1,11 @@
 
+strip_attributes_if_valuetype = function(x) {
+  if (is.environment(x))
+    return(x)
+  attributes(x) = NULL
+  return(x)
+}
+
 
 parse_jags_dist = function(text) {
   stopifnot(vek::is_chr_vec_xb1(text))
@@ -154,37 +161,36 @@ parse_call3 = function(x, name, params) {
   else
     content$truncation = obj$truncation
 
-  return(structure(content, class = "pcj_jags_dist"))
-}
-
-
-new__jags_dist_info = function(name, params) {
-  stopifnot(exprs = {
-    vek::is_chr_vec_nxb1(name)
-    vek::is_chr_vec_nxb(params)
-    length(params) > 0L
-    length(unique(params)) == length(params)
-    all(params != "truncation", na.rm = FALSE)
-  })
-
-  return(list(name = name, params = params))
+  return(structure(content, class = "pcj_jags_distribution"))
 }
 
 
 get_jags_dist_info = function() {
-  list(
-    dbeta =      new__jags_dist_info("dbeta", c("a", "b")),
-    dchisqr =    new__jags_dist_info("dchisqr", "k"),
-    dexp =       new__jags_dist_info("dexp", "lambda"),
-    df =         new__jags_dist_info("df", c("n", "m")),
-    dgamma =     new__jags_dist_info("dgamma", c("r", "lambda")), # TODO
-    dlogis =     new__jags_dist_info("dlogis", c("mu", "tau")),
-    dlnorm =     new__jags_dist_info("dlnorm", c("mu", "tau")),
-    dnorm =      new__jags_dist_info("dnorm", c("mu", "tau")),
-    dt =         new__jags_dist_info("dt", c("mu", "tau", "k")), # TODO
-    dweib =      new__jags_dist_info("dweib", c("v", "lambda")), # TODO
-    dunif =      new__jags_dist_info("dunif", c("a", "b"))
-  )
+  g = \(name, params) {
+    stopifnot(exprs = {
+      vek::is_chr_vec_nxb1(name)
+      vek::is_chr_vec_nxb(params)
+      length(params) > 0L
+      length(unique(params)) == length(params)
+      all(params != "truncation", na.rm = FALSE)
+    })
+
+    return(list(name = name, params = params))
+  }
+
+  return(list(
+    dbeta =   g("dbeta", c("a", "b")),
+    dchisqr = g("dchisqr", "k"),
+    dexp =    g("dexp", "lambda"),
+    df =      g("df", c("n", "m")),
+    dgamma =  g("dgamma", c("r", "lambda")), # TODO
+    dlogis =  g("dlogis", c("mu", "tau")),
+    dlnorm =  g("dlnorm", c("mu", "tau")),
+    dnorm =   g("dnorm", c("mu", "tau")),
+    dt =      g("dt", c("mu", "tau", "k")), # TODO
+    dweib =   g("dweib", c("v", "lambda")), # TODO
+    dunif =   g("dunif", c("a", "b")) # TODO throws error for dunif()
+  ))
 }
 
 #dbern =      new__jags_dist_info("dbern", "p"),

@@ -35,8 +35,7 @@ graphics::rug(data)
 model = pcj:::new_pcj_process_capability_model1(
   data,
   pcj::new_pci_parameters1(c("C_p", "C_pk", "C_pm"), 0, -3, 3, 1),
-  #"dnorm(.7, 1)T(-2, 1.5)",
-  "dunif(-3, 3)",
+  "dnorm(.7, 1)T(-2, 1.5)",
   "dexp(1)T(1, 4)",
   pcj::new_prior_predictive_parameters(100L, 1L),
   pcj::new_rjags_parameters(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill"),
