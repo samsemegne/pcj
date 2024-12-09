@@ -30,13 +30,7 @@ pcj_safely = function(expr) {
   #out = out[out != ""] |>
   #  as.list()
 
-  return(
-    structure(list(
-      condition = condition,
-      output = out,
-      result = result
-    ), class = "pcj_result")
-  )
+  return(new_pcj_result(result, condition, out))
 }
 
 
@@ -49,5 +43,24 @@ get_message.pcj_result = get_message_
 #' @export
 get_condition.pcj_result = get_condition_
 #' @export
+get_output.pcj_result = get_output_
+#' @export
 get_result.pcj_result = get_result_
+
+
+new_pcj_result = function(result, condition = list(), output = list()) {
+  stopifnot(exprs = {
+    is_list(condition)
+    is_list(output)
+    all(sapply_(condition, is_cond), na.rm = FALSE)
+    all(sapply_(output, vek::is_chr_vec_x1), na.rm = FALSE)
+    # TODO add checks
+  })
+
+  return(structure(list(
+    condition = condition,
+    output = output,
+    result = result
+  ), class = "pcj_result"))
+}
 

@@ -7,128 +7,233 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+# pcj
+
 ```{r setup}
 library(pcj)
-library(pci)
+
+# Default libraries.
+library(grDevices)
+library(graphics)
+library(stats)
 ```
 
 
 ```{r}
 set.seed(1L)
-data = stats::rnorm(30L)
+data = stats::rnorm(30L, mean = .7, sd = 1L)
 
-model = pcj::estimate_capability(
+plot(stats::density(data), main = "Data")
+graphics::hist(data, add = TRUE, freq = FALSE, col = NA)
+graphics::rug(data)
+```
+
+
+# The S3 Way
+
+```{r}
+model = pcj:::new_pcj_process_capability_model1(
   data,
-  pcj::new_pci_params(c("C_pl", "C_pu", "C_pk", "C_pm"), 0, -3, 3, 6),
-  "dnorm(0, 1)T(-1, 5)",
+  pcj::new_pci_parameters1(c("C_p", "C_pk", "C_pm"), 0, -3, 3, 1),
+  #"dnorm(.7, 1)T(-2, 1.5)",
+  "dunif(-3, 3)",
   "dexp(1)T(1, 4)",
-  pcj::new_prior_predictive_params(2000L, 123L),
-  pcj::new_rjags_params(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill"),
-  pcj::new_sequential_params(c(15L, 20L, 25L, 30L))
+  pcj::new_prior_predictive_parameters(100L, 1L),
+  pcj::new_rjags_parameters(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill"),
+  #stat = f,
+  evaluate = TRUE
 )
 ```
 
-
-
 ```{r}
-pci::C_p(stats::sd(data), -3, 3, 6)
-pci::C_pk(mean(data), stats::sd(data), -3, 3, 6)
-pci::C_pm(mean(data), stats::sd(data), 0, -3, 3, 6)
-```
-
-
-```{r}
-options(pcj.graphics_driver = "graphics")
-
-pcj::plot_prior(model, x = "mu")
-pcj::plot_prior(model, x = "sigma")
-pcj::plot_prior_predictive(model, x = "C_pk")
-
-options(pcj.graphics_driver = "ggplot2")
-
-pcj::plot_posterior(model, x = "mu")
-pcj::plot_posterior(model, x = "sigma")
-pcj::plot_posterior(model, x = "C_pk") 
-```
-
-
-
-
-```{r fig.width=5, fig.height=5}
-pcj::plot_sequential(model, x = "C_pk", position = "ridges")
-```
-
-```{r fig.width=5, fig.height=5}
-polspline_density = \(x, ...) {
-    fit = polspline::logspline(x)
-    return(\(k, ...) polspline::dlogspline(k, fit))
+if (length(get_error(model)) > 0L) {
+  # ...
 }
 
-options(pcj.graphics_driver = "graphics")
+if (length(get_warning(model)) > 0L) {
+  # ...
+}
+```
 
-pcj::plot_sequential(model, x = "C_pk", position = "ridges", stat = polspline_density)
+
+## Summarizing
+
+```{r}
+summary(model)
+```
+
+```{r}
+mean(model, "posterior", "C_pm")
+
+stats::median(model, "posterior", "C_pm")
+
+stats::quantile(model, "posterior", "C_pm", c(.25, .5, .75))
+
+probability(model, "posterior", "C_pm", ">= 1")
+```
+
+
+## Plotting
+
+```{r fig.height = 7.5, fig.width = 6}
+layout(t(matrix(1:6, 2L)))
+
+pcj::plot_prior_density(model, what = "mu") 
+
+pcj::plot_prior_density(model, what = "sigma")
+
+pcj::plot_prior_predictive_density(model, what = "C_pm")
+
+pcj::plot_posterior_density(model, what = "C_pm")
+
+pcj::plot_prior_predictive_density(model, what = "p_nonconformance")
+
+# Note. These functions return objects, which can be assigned to variables.
+your_plot = pcj::plot_posterior_density(model, what = "p_nonconformance")
+plot(your_plot)
+
+```
+
+## The `graphics` Parameter
+
+The `graphics` parameter can be set to `"lines"` (the default), `"points"`, or `"area"`.
+
+```{r}
+pcj::plot_posterior_density(model, what = "C_pm")
+
+pcj::plot_posterior_density(
+  model, what = "C_pm", graphics = "area",
+  x = structure(">= q.025 & <= q.975", n = 100L),
+  col = grDevices::adjustcolor("black", alpha.f = .1), add = TRUE)
+
+pcj::plot_posterior_density(
+  model, what = "C_pm", graphics = "points", x = "mean", pch = 19L, 
+  add = TRUE)
+```
+
+## Sequential Procedure
+
+
+```{r}
+seq_proc = pcj::new_pcj_sequential_procedure(model, c(20L, 25L, 30L))
 ```
 
 
 ```{r}
-model = pcj::estimate_capability(
-  data,
-  pcj::new_pci_params(c("C_p"), 0, -3, 3, 6),
-  0,
-  "dexp(3)",
-  pcj::new_prior_predictive_params(2000L, 123L),
-  pcj::new_rjags_params(500L, 2000L, 1L, 4L, 123L, "base::Wichmann-Hill"),
-  pcj::new_sequential_params(c(15L, 20L, 25L, 30L))
+summary(seq_proc) |>
+  get_result() |>
+  subset(what == "C_pm" & distribution == "posterior")
+```
+
+
+```{r fig.height = 6, fig.width = 6}
+pcj::plot_sequential_procedure(seq_proc, what = "C_pm", display = "ridges")
+```
+
+## Plotting Using `ggplot2`
+
+```{r}
+options(pcj.graphics_driver = "ggplot2")
+```
+
+
+```{r}
+c(
+  pcj::plot_posterior_density(model, what = "C_pm"),
+  pcj::plot_posterior_density(
+    model, what = "C_pm", graphics = "area",
+    x = structure(">= q.025 & <= q.975", n = 100L),
+    col = grDevices::adjustcolor("black", alpha.f = .1), add = TRUE
+  ),
+  pcj::plot_posterior_density(
+    model, what = "C_pm", graphics = "points", x = c("mean"), pch = 19L, 
+    add = TRUE)
 )
 ```
 
+
 ```{r}
-polspline_stats = \(x, ...) {
-    fit = polspline::logspline(x)
-    return(list(
-      density = \(k, ...) polspline::dlogspline(k, fit),
-      quantile = \(k, ...) polspline::qlogspline(k, fit)
-    ))
-} 
-
-options(pcj.graphics_driver = "ggplot2")
-
-pcj::plot_prior(model, x = "mu")
-pcj::plot_prior(model, "arrows", x = "mu")
-
-pcj::plot_prior(model, "area", x = "sigma")
-
-pcj::plot_posterior(model, x = "C_p")
-
-
+# Reset the graphics driver.
 options(pcj.graphics_driver = "graphics")
-pcj::plot_posterior(model, "area", x = "C_p", at = c("q.025", "q.975"))
-pcj::plot_posterior(model, "points", x = "C_p", at = c("mean", "median"),
-                    add = TRUE, pch = 19)
-
-pcj::plot_posterior(model, x = "C_p", add = TRUE)
+```
 
 
-normal_stat = \(x, ...) {
+# The R6 Way
+
+
+```{r}
+model = pcj::PcjProcessCapabilityModel1$new()
+
+model$update(
+  data,
+  model$new_pci_parameters1(c("C_p", "C_pk", "C_pm"), 0, -3, 3, 1),
+  "dnorm(.7, 1)T(-2, 1.5)",
+  "dexp(1)T(1, 4)",
+  model$new_prior_predictive_parameters(100L, 1L),
+  model$new_rjags_parameters(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill")
+)
+
+model$run()
+```
+
+
+```{r}
+if (length(model$error) > 0L) {
+  # ...
+}
+
+if (length(model$warning) > 0L) {
+  # ...
+}
+```
+
+# Summarizing
+
+```{r}
+model$summary()
+```
+
+```{r}
+model$posterior$C_pm$mean()
+
+model$posterior$C_pm$median()
+
+model$posterior$C_pm$quantile(c(.25, .5, .75))
+
+model$posterior$C_pm$probability(">= 1")
+
+model$posterior$C_pm$sd()
+```
+
+
+```{r}
+model$prior$mu$plot_density()
+```
+
+## The `stat` Parameter
+
+```{r}
+model$posterior$C_pm$plot_density(ylim = c(0., 1.))
+
+f = function(x) {
   mu = mean(x)
   sigma = stats::sd(x)
-  return(\(k, ...) stats::dnorm(k, mu, sigma))
+  return(list(
+    density = \(...) return(\(x) return(stats::dnorm(x, mu, sigma, FALSE))),
+    quantile = \(q, ...) return(stats::qnorm(q, mu, sigma, TRUE, FALSE)),
+    mean = \(...) return(mu),
+    median = \(...) return(mu),
+    sd = \(...) return(sigma)
+  ))
 }
 
-# The way "pcj_plot_object" interacts with ggplot objects must yet be adjusted,
-# currently 2 objects are rendered unintentionally, but the it demonstrates the 
-# goal.
-library(jaspGraphs)
-options(pcj.graphics_driver = "ggplot2")
-plot(pcj::plot_posterior(model, x = "C_p", stat = normal_stat)) +
-  pcj::plot_posterior(model, x = "C_p", add = TRUE, col = "steelblue", lwd = 2) +
-  jaspGraphs::themeJaspRaw() +
-  jaspGraphs::geom_rangeframe()
+model$update(stat = f)
+model$run()
 
+model$posterior$C_pm$plot_density(
+  x = structure(">= q.001 & <= q.999", n = 1000L),
+  add = TRUE, col = "steelblue", lwd = 1.5)
 ```
 
 
-```{r}
-summary(model$sequential_analysis$fit[[4L]])
-```
 

@@ -1,12 +1,12 @@
 
 
-is.prior_predictive_params = function(x) {
-  is_of_mono_class(x, "prior_predictive_params")
+is.prior_predictive_parameters = function(x) {
+  is_of_mono_class(x, "prior_predictive_parameters")
 }
 
 
 #' @export
-new_prior_predictive_params = function(
+new_prior_predictive_parameters = function(
     sample_size,
     seed,
     rng_kind = "Wichmann-Hill",
@@ -30,16 +30,16 @@ new_prior_predictive_params = function(
       rng_kind = rng_kind,
       rng_version = rng_version
     ),
-    class = "prior_predictive_params"
+    class = "prior_predictive_parameters"
   ))
 }
 
 
-is_valid__prior_predictive_params = function(x) {
-  stopifnot(is.prior_predictive_params(x))
+is_valid__prior_predictive_parameters = function(x) {
+  stopifnot(is.prior_predictive_parameters(x))
   return(all(
     is_uniquely_named_list(unclass(x)),
-    identical(names(x), get_prior_predictive_params_names()),
+    identical(names(x), get_prior_predictive_parameters_names()),
     vek::is_int_vec_x1(x$sample_size),
     vek::is_int_vec_x1(x$seed),
     vek::is_chr_vec_xb1(x$rng_kind),
@@ -52,7 +52,7 @@ is_valid__prior_predictive_params = function(x) {
 }
 
 
-get_prior_predictive_params_names = function() {
+get_prior_predictive_parameters_names = function() {
   return(c("sample_size", "seed", "rng_kind", "rng_version"))
 }
 

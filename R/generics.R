@@ -29,21 +29,11 @@ get_condition = function(object, ...) UseMethod("get_condition")
 
 
 #' @export
+get_output = function(object, ...) UseMethod("get_output")
+
+
+#' @export
 get_result = function(object, ...) UseMethod("get_result")
-
-
-has_error = function(object, ...) {
-  e = get_error(object, ...)
-  stopifnot(is_list(e))
-  return(!is_empty(e))
-}
-
-
-has_warning = function(object, ...) {
-  w = get_warning(object, ...)
-  stopifnot(is_list(w))
-  return(!is_empty(w))
-}
 
 
 #' @export
@@ -51,13 +41,27 @@ probability = function(object, ...) UseMethod("probability")
 
 
 #' @export
-plot_prior = function(object, ...) UseMethod("plot_prior")
+plot_prior_density = function(object, ...) UseMethod("plot_prior_density")
 
 
 #' @export
-plot_prior_predictive = function(object, ...) UseMethod("plot_prior_predictive")
+plot_prior_predictive_density = function(object, ...) {
+  UseMethod("plot_prior_predictive_density")
+}
 
 
 #' @export
-plot_posterior = function(object, ...) UseMethod("plot_posterior")
+plot_posterior_density = function(object, ...) {
+  UseMethod("plot_posterior_density")
+}
+
+
+#' @export
+has_probability_density = function(object, ...) {
+  UseMethod("has_probability_density")
+}
+
+
+#' @export
+has_probability_mass = function(object, ...) UseMethod("has_probability_mass")
 

@@ -7,44 +7,26 @@ PcjModelEntity = R6::R6Class(
 
   private = list(
     parent_ = NULL,
-    x_ = NULL,
+    what_ = NULL,
     distribution_ = NULL
   ),
 
-  active = list(
-    mean = function(value) {
-      if (missing(value)) {
-        o = private$parent_
-        return(mean(o, private$x_, private$distribution_))
-      } else {
-        stop(runtimeError("Runtime error"))
-      }
-    },
-
-    median = function(value) {
-      if (missing(value)) {
-        o = private$parent_
-        return(median(o, private$x_, private$distribution_))
-      } else {
-        stop(runtimeError("Runtime error"))
-      }
-    }
-  ),
+  active = list(),
 
   public = list(
-    initialize = function(x, distribution, parent) {
+    initialize = function(what, distribution, parent) {
       stopifnot(exprs = {
-        vek::is_chr_vec_xb1(x)
+        vek::is_chr_vec_xb1(what)
         vek::is_chr_vec_xb1(distribution)
         R6::is.R6(parent)
         distribution %in% c("prior", "prior_predictive", "posterior")
-        x %in% variable.names(parent, distribution)
+        what %in% variable.names(parent, distribution)
         is.null(private$parent_)
-        is.null(private$x_)
+        is.null(private$what_)
         is.null(private$distribution_)
       })
 
-      private$x_ = x
+      private$what_ = what
       private$distribution_ = distribution
       private$parent_ = parent
 
@@ -57,13 +39,13 @@ PcjModelEntity = R6::R6Class(
       df = get_result(o)
       stopifnot(exprs = {
         is.data.frame(df)
-        "x" %in% colnames(df)
+        "what" %in% colnames(df)
         "distribution" %in% colnames(df)
       })
 
       df = subset.data.frame(
         df,
-        subset = x == private$x_ & distribution == private$distribution_
+        subset = what == private$what_ & distribution == private$distribution_
       )
 
       row.names(df) = 1:nrow(df)
@@ -72,34 +54,61 @@ PcjModelEntity = R6::R6Class(
       return(o)
     },
 
-    probability = function(value) {
+    mean = function(...) {
+      return(mean(private$parent_, private$distribution_, private$what_, ...))
+    },
+
+    median = function(...) {
+      return(stats::median(
+        private$parent_, private$distribution_, private$what_, ...))
+    },
+
+    sd = function(...) {
+      if (private$distribution_ == "prior") {
+        stop('sd() is currently not supported for the prior distribution')
+      }
+
+      stat = get_result(private$parent_$content)$stat
+      samples = get_sample(
+        private$parent_$content, private$what_, private$distribution_, "all")
+
+      stat_res = obtain_stat_result(samples, stat)
+      sd_res = obtain_stat_sd(stat_res, ...)
+      throw_first_error(sd_res)
+      signal_warnings(sd_res)
+      return(get_result(sd_res))
+    },
+
+    probability = function(value, ...) {
       return(probability(
         private$parent_,
-        private$x_,
         private$distribution_,
-        value
+        private$what_,
+        value,
+        ...
       ))
     },
 
-    quantile = function(value) {
-      return(quantile(
+    quantile = function(value, ...) {
+      return(stats::quantile(
         private$parent_,
-        private$x_,
         private$distribution_,
-        value
+        private$what_,
+        value,
+        ...
       ))
     },
 
-    plot = function(...) {
+    plot_density = function(..., graphics = "lines") {
       f = switch(
         private$distribution_,
-        "prior" = plot_prior,
-        "prior_predictive" = plot_prior_predictive,
-        "posterior" = plot_posterior,
+        "prior" = plot_prior_density,
+        "prior_predictive" = plot_prior_predictive_density,
+        "posterior" = plot_posterior_density,
         stop()
       )
 
-      return(f(private$parent_, ..., x = private$x_))
+      return(f(private$parent_, ..., what = private$what_, graphics = graphics))
     }
   )
 )

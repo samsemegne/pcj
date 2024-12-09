@@ -1,5 +1,216 @@
 
 
+is_sorted = function(x) {
+  stopifnot(vek::is_num_vec(x) || is_list_of_num_1(x))
+  if (is_list(x))
+    return(!is.unsorted(as.numeric(x)))
+  else
+    return(!is.unsorted(x))
+}
+
+
+is_list_of_num_1 = function(x) {
+  is_num_1 =  \(k) return(vek::is_num_vec(k) && length(k) == 1L)
+  return(is_list(x) && all(sapply_(x, is_num_1), na.rm = FALSE))
+}
+
+
+chr_starts_with_inequality = function(x) {
+  stopifnot(vek::is_chr_vec(x))
+  return(startsWith(x, ">") | startsWith(x, ">=") |
+           startsWith(x, "<") | startsWith(x, "<="))
+}
+
+
+strip_attrs = function(x) {
+  if (is.environment(x))
+    return(x)
+  attributes(x) = NULL
+  return(x)
+}
+
+
+chr_is_num = function(x) {
+  stopifnot(vek::is_chr_vec(x))
+  if (is_empty(x))
+    return(logical(0L))
+
+  is_num = sapply_(x, \(k) {
+    return(tryCatch(
+      is.numeric(as.numeric(k)),
+      condition = \(cond) return(FALSE)
+    ))
+  })
+
+  return(is_num)
+}
+
+
+chr_is_quantile_code = function(x) {
+  stopifnot(vek::is_chr_vec(x))
+
+  if (is_empty(x))
+    return(logical(0L))
+
+  is_q = startsWith(x, "q")
+  if (!any(is_q, na.rm = TRUE))
+    return(is_q)
+
+  x_ = x[is_q]
+  x_ = substr(x_, 2L, nchar(x_))
+  is_num = chr_is_num(x_)
+  num = as.numeric(x_[is_num]) # TODO handle ints
+  is_q[is_q] = is_num
+  is_fin_num = is.finite(num)
+  is_q[is_q] = is_fin_num
+  num = num[is_fin_num]
+  is_q[is_q] = num >= 0L & num <= 1L
+  return(is_q)
+}
+
+
+chr_parse_quantile_code = function(x) {
+  stopifnot(vek::is_chr_vec(x))
+  if (is_empty(x))
+    return(numeric(0L))
+
+  is_q = chr_is_quantile_code(x)
+  q = rep_len(NaN, length(x))
+  if (!any(is_q, na.rm = FALSE))
+    return(q)
+
+  q[is_q] = as.numeric(substr(x[is_q], 2L, nchar(x[is_q])))
+  return(q)
+}
+
+
+gate_apply = function(x, f, g, flag_func, output_type) {
+  stopifnot(exprs = {
+    # TODO
+    #vek::is_num_vec(x) || vek::is_chr_vec(x) || vek::is_lgl_vec(x)
+    is.function(f)
+    length(formals(f)) > 0L
+    is.function(g)
+    length(formals(g)) > 0L
+    is.function(flag_func)
+    length(formals(flag_func)) > 0L
+    vek::is_chr_vec_xb1(output_type)
+    output_type %in% c("logical", "character", "double", "integer", "numeric")
+  })
+
+  flags = flag_func(x)
+  stopifnot(exprs = {
+    vek::is_lgl_vec_x(flags)
+    length(flags) == length(x)
+  })
+
+  output_type_f = switch(
+    output_type,
+    "logical" = logical,
+    "character" = character,
+    "double" = double,
+    "integer" = integer,
+    "numeric" = numeric,
+    stop()
+  )
+
+  if (length(x) == 0L) {
+    return(output_type_f(0L))
+  }
+
+  x_ = output_type_f(length(x))
+  f_output = f(x[flags])
+  g_output = g(x[!flags])
+  x_[flags] = f_output
+  x_[!flags] = g_output
+
+  return(x_)
+}
+
+
+is_num_vec_prop = function(x) {
+  return(vek::is_num_vec(x) &&
+    all(x[is.finite(x)] >= 0L & x[is.finite(x)] <= 1L, na.rm = TRUE))
+}
+
+
+is_cond = function(object) {
+  return(length(class(object)) > 0L &&
+    inherits(object, "condition", TRUE) == length(class(object)) &&
+    is_all_unique(class(object))
+  )
+}
+
+
+has_error = function(object, ...) {
+  e = get_error(object, ...)
+  stopifnot(is_list(e))
+  return(!is_empty(e))
+}
+
+
+has_warning = function(object, ...) {
+  w = get_warning(object, ...)
+  stopifnot(is_list(w))
+  return(!is_empty(w))
+}
+
+
+throw_first_error = function(object) {
+  if (has_error(object)) {
+    e = get_error(object)[[1L]]
+    stop(e)
+  }
+}
+
+
+signal_warnings = function(object) {
+  if (has_warning(object)) {
+    for(w in get_warning(object)) {
+      warning(w)
+    }
+  }
+}
+
+
+is_valid_summary_stats_string = function(x) {
+  stopifnot(exprs = {
+    vek::is_chr_vec_xb(x)
+    is_all_unique(x)
+  })
+
+  other_str = x[!startsWith(x, "q")]
+
+  valid_stats = c("mean", "median", "sd", "var", "mean.default",
+                  "median.default")
+
+  if (!all(other_str %in% valid_stats, na.rm = FALSE))
+    return(FALSE)
+
+  q_str = x[startsWith(x, "q")]
+  if (length(q_str) > 0L) {
+    max_str_len = max(nchar(q_str), na.rm = FALSE)
+    q_str_rhs = substr(q_str, 2L, max_str_len)
+    res = pcj_safely({ as.numeric(q_str_rhs) })
+    if (has_warning(res) || has_error(res))
+      return(FALSE)
+
+    q_val = get_result(res)
+    if (!vek::is_num_vec_xyz(q_val))
+      return(FALSE)
+
+    if (!all(q_val >= 0L & q_val <= 1L, na.rm = FALSE))
+      return(FALSE)
+
+    if (!is_all_unique(q_val))
+      return(FALSE)
+  }
+
+
+  return(TRUE)
+}
+
+
 sapply_ = function(x, f, ...) {
   sapply(x, f, ..., simplify = TRUE, USE.NAMES = FALSE)
 }
@@ -8,20 +219,6 @@ sapply_ = function(x, f, ...) {
 is_empty = function(x) {
   stopifnot(!is.null(x))
   return(length(x) == 0L)
-}
-
-
-name_count = function(x, name) {
-  stopifnot(exprs = {
-    !is.null(x)
-    vek::is_chr_vec_xb1(name)
-  })
-
-  k = names(x)
-  if (is.null(k) || length(k) == 0L)
-    return(0L)
-  else
-    return(sum(k == name, na.rm = FALSE))
 }
 
 
@@ -179,6 +376,11 @@ get_message_ = function(object, ...) {
 
 get_condition_ = function(object, ...) {
   return(object$condition)
+}
+
+
+get_output_ = function(object, ...) {
+  return(object$output)
 }
 
 

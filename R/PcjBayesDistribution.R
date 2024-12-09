@@ -6,7 +6,7 @@ PcjBayesDistribution = R6::R6Class(
   private = list(
     parent_ = NULL,
     distribution_ = NULL,
-    x_ = list()
+    entity_ = list()
   )
 )
 
@@ -37,11 +37,11 @@ create_bayes_distribution = function(distribution, x, parent) {
           R6::is.R6(parent)
           is.null(private$parent_)
           is.null(private$distribution)
-          is_empty(private$x_)
+          is_empty(private$entity_)
         })
 
         private$distribution_ = distribution
-        private$x_ = x
+        private$entity_ = x
         private$parent_ = parent
         return(invisible(self))
       }
@@ -53,7 +53,7 @@ create_bayes_distribution = function(distribution, x, parent) {
     field_func = sprintf("
       function(value) {
         if (missing(value))
-          return(private$x_$`%s`)
+          return(private$entity_$`%s`)
         else
           stop(runtimeError('Runtime error'))
       }

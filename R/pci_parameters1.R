@@ -1,10 +1,10 @@
 
 
-is.pci_params = function(x) is_of_mono_class(x, "pci_params")
+is.pci_parameters1 = function(x) is_of_mono_class(x, "pci_parameters1")
 
 
 #' @export
-new_pci_params = function(
+new_pci_parameters1 = function(
     capability_indices,
     target,
     lsl,
@@ -35,14 +35,14 @@ new_pci_params = function(
       usl = usl,
       dl = dl
     ),
-    class = "pci_params"
+    class = "pci_parameters1"
   ))
 }
 
 
 
 is_valid__pci_params = function(x) {
-  stopifnot(is.pci_params(x))
+  stopifnot(is.pci_parameters1(x))
   return(all(
     is_uniquely_named_list(unclass(x)),
     identical(names(x), get_pci_params_names()),

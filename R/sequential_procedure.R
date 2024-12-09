@@ -146,18 +146,13 @@ get_result.pcj_sequential_procedure_summary = get_result_
 
 
 #' @export
-print.pcj_sequential_procedure_summary = function(object, ...) {
+print.pcj_sequential_procedure_summary = function(object) {
   stopifnot(is_of_mono_class(object, "pcj_sequential_procedure_summary"))
 
-  if (has_error(object))
-    stop(get_error(object)[[1L]])
+  throw_first_error(object)
+  signal_warnings(object)
 
-  if (has_warning(object)) {
-    for (w in get_warning(object))
-      warning(w)
-  }
-
-  print.data.frame(get_result(object), ...)
+  print.data.frame(get_result(object))
 
   return(invisible(object))
 }
