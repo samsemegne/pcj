@@ -121,8 +121,8 @@ preprocess_pcj_plot_object = function(object) {
 
   args = get_result(object)$args
 
-  if ("offset" %in% names(get_result(object)$data)) {
-    offset = get_result(object)$data$offset
+  if ("offset" %in% names(get_result(object)$meta)) {
+    offset = get_result(object)$meta$offset
 
     if (get_result(object)$func == "arrows") {
       if (vek::is_num_vec(args$x0))
