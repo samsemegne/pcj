@@ -39,7 +39,7 @@ plot.pcj_plot_object_list = function(object) {
     stop()
   }
 
-  #return(invisible(object))
+  return(invisible(object))
 }
 
 

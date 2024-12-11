@@ -56,7 +56,7 @@ gg_build = function(object) {
   })
 
   if (is.pcj_plot_object(object)) {
-    return(pcj_plot_object_to_ggplot2(obj))
+    return(pcj_plot_object_to_ggplot2(object))
   }
   else if (is.pcj_plot_object_list(object)) {
     ggobj = NULL

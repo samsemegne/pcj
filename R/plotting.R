@@ -1054,7 +1054,7 @@ plot_posterior_ = function(
   cond = c(
     get_condition(object),
     get_condition(at_result),
-    get_conditino(stat_result)
+    get_condition(stat_result)
   )
 
   graphics_obj = new_pcj_plot_object(func, args, data, cond)
@@ -1163,6 +1163,11 @@ plot_area = function(
   y_ = get_result(prior_lines)$args$y
   x = c(x_[1L], x_, x_[length(x_)], x_[length(x_)], x_[1L])
   y = c(y_[1L], y_, y_[length(y_)], 0L, 0L)
+
+  if (offset[1L] != 0L)
+    x = x + offset[1L]
+  if (offset[2L] != 0L)
+    y = y + offset[2L]
 
   xlab = get_var_lab(what)
   ylab = "Density"

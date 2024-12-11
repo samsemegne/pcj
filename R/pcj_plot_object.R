@@ -50,13 +50,8 @@ print.pcj_plot_object = function(object) {
 plot.pcj_plot_object = function(object) {
   stopifnot(is.pcj_plot_object(object))
 
-  if (has_error(object))
-    stop(get_error(object)[[1L]])
-
-  if (has_warning(object)) {
-    for (w in get_warning(object))
-      warning(w)
-  }
+  throw_first_error(object)
+  signal_warnings(object)
 
   func = switch(
     get_result(object)$func,
