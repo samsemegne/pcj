@@ -6,19 +6,25 @@ is.pcj_plot_object = function(x) return(is_of_mono_class(x, "pcj_plot_object"))
 new_pcj_plot_object = function(
     func,
     args,
-    data,
-    object,
-    error = list(),
-    warnings = list()
-)
+    meta,
+    condition
+  )
 {
-  structure(
+  stopifnot(exprs = {
+    vek::is_chr_vec_x1(func)
+    is_uniquely_named_list(args)
+    is_uniquely_named_list(meta)
+    is_list(condition)
+    all(sapply_(condition, is_cond), na.rm = FALSE)
+  })
+
+  return(structure(
     list(
-      condition = c(error, warnings),
-      result = list(func = func, args = args, data = data, object = object)
+      condition = condition,
+      result = list(func = func, args = args, meta = meta)
     ),
     class = "pcj_plot_object"
-  )
+  ))
 }
 
 

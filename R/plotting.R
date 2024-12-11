@@ -245,7 +245,7 @@ plot_point_prior = function(
     }
 
     xy = list(x = c(prior_obj$value, prior_obj$value), y = c(0L, 1L))
-    data = xy |> c(list(x_ = var_name, offset = offset, add = add))
+    meta = xy |> c(list(what = what, offset = offset, add = add))
 
     args = list(type = "l") |>
       smth(dots) |>
@@ -257,30 +257,30 @@ plot_point_prior = function(
         func_name = graphics,
         func_namespace = "graphics",
         #class = class,
-        data = data
+        data = meta
       )) |>
       keep(get_supported_lines_params())
 
-    data = named_list_rm(data, c("x", "y"))
+    meta = named_list_rm(meta, c("x", "y"))
     args = c(xy, args)
-    graphics_obj = new_pcj_plot_object("lines.default", args, data, object)
+    graphics_obj = new_pcj_plot_object("lines.default", args, meta, list())
   }
   else if (graphics == "arrows") {
     x01y01 = list(x0 = prior_obj$value, y0 = 0L, x1 = prior_obj$value, y1 = 1L)
-    data = x01y01 |> c(list(x_ = var_name, offset = offset, add = add))
+    meta = x01y01 |> c(list(what = what, offset = offset, add = add))
 
     args = dots |>
       smth(get_theme_args(
         func_name = graphics,
         func_namespace = "graphics",
         #class = class,
-        data = data
+        data = meta
       )) |>
       keep(get_supported_arrows_params())
 
-    data = named_list_rm(data, c("x0", "y0", "x1", "y1"))
+    data = named_list_rm(meta, c("x0", "y0", "x1", "y1"))
     args = c(x01y01, args)
-    graphics_obj = new_pcj_plot_object("arrows", args, data, object)
+    graphics_obj = new_pcj_plot_object("arrows", args, meta, list())
   } else {
     stop()
   }
@@ -288,7 +288,7 @@ plot_point_prior = function(
   if (add) {
     return(graphics_obj)
   } else {
-    data = list(x = NULL, y = NULL, content = list(graphics_obj))
+    meta = list(x = NULL, y = NULL, content = list(graphics_obj))
 
     args = list(type = "n") |>
       smth(dots) |>
@@ -303,29 +303,27 @@ plot_point_prior = function(
         func_name = "plot.default",
         func_namespace = "graphics",
         #class = class,
-        data = data
+        data = meta
       )) |>
       keep(get_supported_plot_default_params())
 
     if ("ylim" %in% names(args) && !is.null(args$ylim)) {
       tmp = check_lim(args$ylim, "y")
-      if (!is.null(tmp)) stop(tmp)
-      else rm(tmp)
+      throw_first_error(tmp)
+      rm(tmp)
     }
 
     if ("xlim" %in% names(args) && !is.null(args$xlim)) {
       tmp = check_lim(args$xlim, "x")
-      if (!is.null(tmp)) stop(tmp)
-      else rm(tmp)
+      throw_first_error(tmp)
+      rm(tmp)
     }
 
-    data = named_list_rm(data, c("x", "y", "content"))
+    meta = named_list_rm(meta, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, meta, list())
 
-    plot_obj = list(plot_default_obj, graphics_obj)
-    class(plot_obj) = "pcj_plot_object_list"
-    return(plot_obj)
+    return(new_pcj_plot_object_list(list(plot_default_obj, graphics_obj)))
   }
 }
 
@@ -412,9 +410,7 @@ plot_prior_ = function(
   at_res = get_at3(x, prior)
 
   if (has_error(at_res)) {
-    return(new_pcj_plot_object(
-      NULL, NULL, list(), object, get_error(at_res), get_warning(at_res)
-    ))
+    return(new_pcj_plot_object(NULL, NULL, list(), get_condition(at_res)))
   }
 
   x = get_result(at_res) |> as.numeric() # TODO
@@ -494,7 +490,7 @@ plot_prior_ = function(
     stop()
   )
 
-  graphics_obj = new_pcj_plot_object(func, args, data, object)
+  graphics_obj = new_pcj_plot_object(func, args, data, list())
 
   if (add) {
     return(graphics_obj)
@@ -532,11 +528,9 @@ plot_prior_ = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, list())
 
-    plot_obj = list(plot_default_obj, graphics_obj)
-    class(plot_obj) = "pcj_plot_object_list"
-    return(plot_obj)
+    return(new_pcj_plot_object_list(list(plot_default_obj, graphics_obj)))
   }
 }
 
@@ -617,9 +611,7 @@ plot_prior_predictive_ = function(
 
   if (has_error(stat_result)) {
     meta = list(result = list(stat = stat_result))
-    e = get_error(stat_result)
-    w = get_warning(stat_result)
-    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
+    return(new_pcj_plot_object(NULL, NULL, meta, get_condition(stat_result)))
   }
 
   # Default "x".
@@ -637,9 +629,8 @@ plot_prior_predictive_ = function(
       stat = stat_result, x = at_result
     ))
 
-    e = get_error(at_result)
-    w = c(get_warning(stat_result), get_warning(at_result))
-    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
+    cond = c(get_condition(at_result), get_condition(stat_result))
+    return(new_pcj_plot_object(NULL, NULL, meta, cond))
   }
 
   x = get_result(at_result) |> as.numeric() # rhs is temporary
@@ -769,14 +760,13 @@ plot_prior_predictive_ = function(
     stop()
   )
 
-  w = c(
-    get_warning(get_result(object)$prior_predictive),
-    get_warning(stat_result),
-    get_warning(at_result)
+  cond = c(
+    get_condition(get_result(object)$prior_predictive),
+    get_condition(stat_result),
+    get_condition(at_result)
   )
 
-  e = list()
-  graphics_obj = new_pcj_plot_object(func, args, data, object, e, w)
+  graphics_obj = new_pcj_plot_object(func, args, data, cond)
 
   if (add) {
     return(graphics_obj)
@@ -814,12 +804,9 @@ plot_prior_predictive_ = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, list())
 
-    # TODO set error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
-    plot_obj = list(plot_default_obj, graphics_obj)
-    class(plot_obj) = "pcj_plot_object_list"
-    return(plot_obj)
+    return(new_pcj_plot_object_list(list(plot_default_obj, graphics_obj)))
   }
 }
 
@@ -884,10 +871,8 @@ plot_posterior_ = function(
     stop('Setting "type" to "h" is currently not supported')
 
   if (has_error(object)) {
-    meta = list()
-    e = list(simpleError('The model exited with errors'))
-    w = list()
-    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
+    cond = list(simpleError('The model exited with errors'))
+    return(new_pcj_plot_object(NULL, NULL, list(), cond))
   }
 
   stat = get_result(object)$stat
@@ -1049,10 +1034,13 @@ plot_posterior_ = function(
     stop()
   )
 
-  e = list()
-  w_ = get_warning(object)
-  w = c(w_, get_warning(at_result), get_warning(stat_result))
-  graphics_obj = new_pcj_plot_object(func, args, data, object, e, w)
+  cond = c(
+    get_condition(object),
+    get_condition(at_result),
+    get_conditino(stat_result)
+  )
+
+  graphics_obj = new_pcj_plot_object(func, args, data, cond)
 
   if (add) {
     return(graphics_obj)
@@ -1090,11 +1078,9 @@ plot_posterior_ = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    # TODO add error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
-    plot_obj = list(plot_default_obj, graphics_obj)
-    class(plot_obj) = "pcj_plot_object_list"
-    return(plot_obj)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, list())
+
+    return(new_pcj_plot_object_list(list(plot_default_obj, graphics_obj)))
   }
 }
 
@@ -1152,10 +1138,8 @@ plot_area = function(
   prior_lines = do.call(func, args)
 
   if (has_error(prior_lines)) {
-    e = get_error(prior_lines)
-    w = get_warning(prior_lines)
     return(new_pcj_plot_object(
-      NULL, NULL, get_result(prior_lines)$data, object, e, w))
+      NULL, NULL, get_result(prior_lines)$meta, get_condition(prior_lines)))
   }
 
   x_ = get_result(prior_lines)$args$x
@@ -1177,7 +1161,7 @@ plot_area = function(
 
   data = list(x = x, y = y, what = what, offset = offset, add = add)
   if (distribution %in% c("posterior", "prior_predictive")) {
-    data$stat = get_result(prior_lines)$data$stat
+    data$stat = get_result(prior_lines)$meta$stat
   }
 
   args = list(density = NULL, angle = 45L, fillOddEven = FALSE) |>
@@ -1196,13 +1180,12 @@ plot_area = function(
       #class = class,
       data = data
     )) |>
-    keep(get_supported_polygon_params())
+    keep(get_supported_polygon_params()) # TODO fillOddEven etc probably lost now
 
   data = named_list_rm(data, c("x", "y"))
   args = c(list(x = x, y = y), args)
-  e = list()
-  w = get_warning(prior_lines)
-  polygon_obj = new_pcj_plot_object("polygon", args, data, object, e, w)
+  polygon_obj = new_pcj_plot_object(
+    "polygon", args, data, get_condition(prior_lines))
 
   if (add) {
     return(polygon_obj)
@@ -1240,12 +1223,9 @@ plot_area = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    # TODO add error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, list())
 
-    plot_obj = list(plot_default_obj, polygon_obj)
-    class(plot_obj) = "pcj_plot_object_list"
-    return(plot_obj)
+    return(new_pcj_plot_object_list(list(plot_default_obj, polygon_obj)))
   }
 }
 
@@ -1564,7 +1544,7 @@ plot_sequential_procedure = function(
 
     args = list(side = 2L, at = transform_y, labels = labels) |> c(args)
     data = named_list_rm(data, c("side", "at", "labels"))
-    axis_plot_obj = new_pcj_plot_object("axis", args, data, object)
+    axis_plot_obj = new_pcj_plot_object("axis", args, data, list())
 
     plots = c(list(axis_plot_obj), plots)
 
@@ -1590,14 +1570,12 @@ plot_sequential_procedure = function(
 
     data = named_list_rm(data, c("x", "y", "content"))
     args = c(list(x = NULL, y = NULL), args)
-    # TODO add error/warnings
-    plot_default_obj = new_pcj_plot_object("plot.default", args, data, object)
+    plot_default_obj = new_pcj_plot_object("plot.default", args, data, list())
 
     plots = c(list(plot_default_obj), plots)
   }
 
-  class(plots) = "pcj_plot_object_list"
-  return(plots)
+  return(new_pcj_plot_object_list(plots))
 }
 
 

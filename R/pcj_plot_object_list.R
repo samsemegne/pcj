@@ -5,6 +5,17 @@ is.pcj_plot_object_list = function(x) {
 }
 
 
+new_pcj_plot_object_list = function(pcj_plot_object) {
+  stopifnot(exprs = {
+    is_list(pcj_plot_object)
+    !is_empty(pcj_plot_object)
+    all(sapply_(pcj_plot_object, is.pcj_plot_object), na.rm = FALSE)
+  })
+
+  return(structure(pcj_plot_object, class = "pcj_plot_object_list"))
+}
+
+
 #' @export
 print.pcj_plot_object_list = function(object) {
   plot(object)
