@@ -462,11 +462,15 @@ has_probability_density.pcj_process_capability_model1 = function(
     what %in% stats::variable.names(object, distribution)
   })
 
-  if (distribution == "prior") {
-    prior = get_prior(object, what) |>
-      new_pcj_distribution()
+  if (distribution %in% c("prior", "posterior")) {
+    if (what %in% stats::variable.names(object, "prior")) {
+      prior = get_prior(object, what) |>
+        new_pcj_distribution()
 
-    return(!is_pcj_single_point_prior(prior))
+      return(!is_pcj_single_point_prior(prior))
+    } else {
+      return(TRUE)
+    }
   } else {
     return(TRUE)
   }

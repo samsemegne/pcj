@@ -14,13 +14,14 @@ plot_prior_density.pcj_process_capability_model1 = function(
     vek::is_chr_vec_xb1(what)
     graphics %in% c("lines", "points", "area", "arrows")
     what %in% stats::variable.names(object, "prior")
+    has_probability_density(object, "prior", what)
   })
 
   prior_obj = new_pcj_distribution(get_prior(object, what))
 
   if (is_pcj_single_point_prior(prior_obj)) {
     stop('Plotting a point prior is currently not supported')
-    #return(plot_point_prior(object, ..., what = what, offset = offset))
+    #return(plot_single_point_prior(object, ..., what = what, offset = offset))
   }
   else {
     if (graphics %in% c("lines", "points")) {
@@ -59,6 +60,7 @@ plot_prior_predictive_density.pcj_process_capability_model1 = function(
     vek::is_chr_vec_xb1(what)
     graphics %in% c("lines", "area", "points")
     what %in% stats::variable.names(object, "prior_predictive")
+    has_probability_density(object, "prior_predictive", what)
   })
 
   if (graphics %in% c("lines", "points")) {
@@ -96,6 +98,7 @@ plot_posterior_density.pcj_process_capability_model1 = function(
     vek::is_chr_vec_xb1(what)
     graphics %in% c("lines", "points", "area", "arrows")
     what %in% stats::variable.names(object, "posterior")
+    has_probability_density(object, "posterior", what)
   })
 
   if (what %in% stats::variable.names(object, "prior")) {
@@ -118,7 +121,7 @@ plot_posterior_density.pcj_process_capability_model1 = function(
         list(graphics = graphics, what = what)
       )
 
-      plt = do.call(plot_point_prior, args)
+      plt = do.call(plot_single_point_prior, args)
       return(plt)
     }
   }
@@ -143,97 +146,100 @@ plot_posterior_density.pcj_process_capability_model1 = function(
 }
 
 
-# TODO
-# TODO apply offset
-plot_point_prior = function(
+#' @export
+plot_prior_mass.pcj_process_capability_model1 = function(
     object,
     ...,
-    x = NULL,
-    offset = c(0L, 0L)
+    graphics = "lines",
+    what = NULL
+  )
+{
+  return(plot_single_point_distribution(
+    object,
+    ...,
+    graphics = graphics,
+    distribution = "prior",
+    what = what
+  ))
+}
+
+
+#' @export
+plot_posterior_mass.pcj_process_capability_model1 = function(
+    object,
+    ...,
+    graphics = "lines",
+    what = NULL
+  )
+{
+  return(plot_single_point_distribution(
+    object,
+    ...,
+    graphics = graphics,
+    distribution = "posterior",
+    what = what
+  ))
+}
+
+
+plot_single_point_distribution = function(
+    object,
+    ...,
+    graphics = "lines",
+    distribution = NULL,
+    what = NULL
   )
 {
   stopifnot(exprs = {
     is.pcj_process_capability_model1(object)
-    vek::is_chr_vec_xb1(x)
-    x %in% stats::variable.names(object, "prior")
-  })
-
-  offset_check = check_offset(offset)
-  if (!is_empty(offset_check))
-    stop(offset_check[[1L]])
-
-  graphics = "lines"
-  if (...length() > 0L)
-    if (dots_names(...)[1L] == "")
-      graphics = ...elt(1L)
-
-  stopifnot(exprs = {
-    vek::is_chr_vec_xb1(graphics)
+    vek::is_chr_vec_x1(graphics)
+    vek::is_chr_vec_x1(distribution)
+    vek::is_chr_vec_x1(what)
     graphics %in% c("lines", "arrows")
+    distribution %in% c("prior", "posterior")
+    what %in% stats::variable.names(object, "prior")
+    what %in% stats::variable.names(object, distribution)
+    has_probability_mass(object, distribution, what)
   })
 
   dots = list(...)
-
-  if (...length() > 0L)
-    if (dots_names(...)[1L] == "")
-      dots = dots[-1L]
-
   stopifnot(is_uniquely_named_list(dots))
+
+  offset = c(0L, 0L)
+  if ("offset" %in% names(dots)) {
+    offset = dots$offset
+    dots$offset = NULL
+  }
+
+  offset_check = check_offset(offset)
+  throw_first_error(offset_check)
+  rm(offset_check)
 
   add = FALSE
   if ("add" %in% names(dots)) {
     add = dots$add
-    stopifnot(vek::is_lgl_vec_x1(add))
     dots$add = NULL
   }
 
-  at = NULL
-  if ("at" %in% names(dots)) {
-    at = dots$at
-    dots$at = NULL
+  stopifnot(vek::is_lgl_vec_x1(add))
+
+  x = "x"
+  if ("x" %in% names(dots)) {
+    x = dots$x
+    dots$x = NULL
   }
 
-  at_info = get_at_info(at)
-  at = at_info$at
-  n = at_info$n
-  by = at_info$by
-  from = at_info$from
-  to = at_info$to
+  stopifnot(exprs = {
+    vek::is_chr_vec_nx1(x)
+    x == "x"
+  })
 
-
-
-  var_name = x
-  rm(x)
   var_info = get_variable_info()
-
-  prior_obj = new_pcj_distribution(get_prior(object, var_name))
+  prior_obj = new_pcj_distribution(get_prior(object, what))
   stopifnot(is_pcj_single_point_prior(prior_obj))
 
-
-  if (length(at) > 1L) {
-    msg = paste0('If "length(at) > 0", then the "at" argument for a single ',
-                 'point prior may currently only contain a single value',
-                 collapse = NULL, recycle0 = FALSE)
-    stop(msg)
-  }
-
-  if (length(at) == 1L && at != prior_obj$value) {
-    msg = paste0('If "length(at) > 0", then "at" must currently equal the ',
-                 'value of the single point prior',
-                 collapse = NULL, recycle0 = FALSE)
-    stop(msg)
-  }
-
-  # TODO
-  #if (length(at) == 0L) {
-  #  if ()
-  #}
-
-  xlim = c(-1L, 1L) + prior_obj$value
   ylab = "Mass"
-  xlab = get_var_lab(var_name)
-  #legend = xlab
-  ylim = c(0L, 1L)
+  xlab = get_var_lab(what)
 
   if (graphics == "lines") {
     if ("type" %in% names(dots)) {
@@ -245,8 +251,18 @@ plot_point_prior = function(
       dots$type = NULL
     }
 
-    xy = list(x = c(prior_obj$value, prior_obj$value), y = c(0L, 1L))
-    meta = xy |> c(list(what = what, offset = offset, add = add))
+    x = c(prior_obj$value, prior_obj$value)
+    y = c(0L, 1L)
+
+    if (offset[1L] != 0L)
+      x = x + offset[1L]
+    if (offset[2L] != 0L)
+      y = y + offset[2L]
+
+    xlim = c(-1L, 1L) + x[1L]
+    ylim = range(y, na.rm = TRUE)
+
+    meta = list(x = x, y = y, what = what, offset = offset, add = add)
 
     args = list(type = "l") |>
       smth(dots) |>
@@ -263,11 +279,24 @@ plot_point_prior = function(
       keep(get_supported_lines_params())
 
     meta = named_list_rm(meta, c("x", "y"))
-    args = c(xy, args)
+    args = c(list(x = x, y = y), args)
     graphics_obj = new_pcj_plot_object("lines.default", args, meta, list())
   }
   else if (graphics == "arrows") {
     x01y01 = list(x0 = prior_obj$value, y0 = 0L, x1 = prior_obj$value, y1 = 1L)
+
+    if (offset[1L] != 0L) {
+      x01y01$x0 = x01y01$x0 + offset[1L]
+      x01y01$x1 = x01y01$x1 + offset[1L]
+    }
+    if (offset[2L] != 0L) {
+      x01y01$y0 = x01y01$y0 + offset[2L]
+      x01y01$y1 = x01y01$y1 + offset[2L]
+    }
+
+    xlim = range(x01y01[c("x0", "x1")], na.rm = TRUE)
+    ylim = range(x01y01[c("y0", "y1")], na.rm = TRUE)
+
     meta = x01y01 |> c(list(what = what, offset = offset, add = add))
 
     args = dots |>
@@ -290,6 +319,12 @@ plot_point_prior = function(
     return(graphics_obj)
   } else {
     meta = list(x = NULL, y = NULL, content = list(graphics_obj))
+    main = switch(
+      distribution,
+      "prior" = "Prior",
+      "posterior" = "Posterior",
+      stop()
+    )
 
     args = list(type = "n") |>
       smth(dots) |>
@@ -298,7 +333,7 @@ plot_point_prior = function(
         ylab = ylab,
         xlim = xlim,
         ylim = ylim,
-        main = "Prior"
+        main = main
       )) |>
       smth(get_theme_args(
         func_name = "plot.default",
@@ -601,10 +636,8 @@ plot_prior_predictive_ = function(
     stop('Setting "type" to "h" is currently not supported')
 
   if(has_error(get_result(object)$prior_predictive)) {
-    meta = list()
-    e = list(simpleError('"object$prior_predictive" exited with errors'))
-    w = list()
-    return(new_pcj_plot_object(NULL, NULL, meta, object, e, w))
+    cond = get_condition(get_result(object)$prior_predictive)
+    return(new_pcj_plot_object(NULL, NULL, list(), cond))
   }
 
   stat = get_result(object)$stat

@@ -31,8 +31,8 @@ graphics::rug(data)
 model = pcj:::new_pcj_process_capability_model1(
   data,
   pcj::new_pci_parameters1(c("C_p", "C_pk", "C_pm"), 0, -3, 3, 1),
-  "dnorm(.7, 1)T(-2, 1.5)",
-  "dexp(1)T(1, 4)",
+  "dnorm(.7, 1)T(-2, 1.5)", # JAGS syntax
+  "dexp(1)T(1, 4)", # JAGS syntax
   pcj::new_prior_predictive_parameters(100L, 1L),
   pcj::new_rjags_parameters(50L, 100L, 1L, 4L, 123L, "base::Wichmann-Hill"),
   #stat = f,
@@ -123,10 +123,37 @@ plot(your_plot)
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
 
+## Point Priors
+
+``` r
+model = stats::update(model, prior_mu = 1L, evaluate = TRUE)
+#> NOTE: Stopping adaptation
+```
+
+``` r
+plot_prior_mass(model, what = "mu")
+```
+
+<img src="man/figures/README-unnamed-chunk-9-1.png" width="100%" />
+
+``` r
+
+plot_posterior_mass(model, what = "mu", graphics = "arrows")
+```
+
+<img src="man/figures/README-unnamed-chunk-9-2.png" width="100%" />
+
+``` r
+model = stats::update(
+  model, prior_mu = "dnorm(.7, 1)T(-2, 1.5)", evaluate = TRUE)
+#> NOTE: Stopping adaptation
+```
+
 ## The `graphics` Parameter
 
 The `graphics` parameter can be set to `"lines"` (the default),
-`"points"`, or `"area"`.
+`"points"`, or `"area"`. In case of a single point prior (like shown
+earlier) `"lines"` and `"arrows"` are available.
 
 ``` r
 pcj::plot_posterior_density(model, what = "C_pm")
@@ -141,7 +168,7 @@ pcj::plot_posterior_density(
   add = TRUE)
 ```
 
-<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
 
 ## Sequential Procedure
 
@@ -174,7 +201,7 @@ summary(seq_proc) |>
 pcj::plot_sequential_procedure(seq_proc, what = "C_pm", display = "ridges")
 ```
 
-<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-14-1.png" width="100%" />
 
 ## Plotting Using `ggplot2`
 
@@ -197,7 +224,7 @@ c(
 #> Loading required namespace: ggplot2
 ```
 
-<img src="man/figures/README-unnamed-chunk-13-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-16-1.png" width="100%" />
 
 ``` r
 # Reset the graphics driver.
@@ -289,7 +316,7 @@ model$posterior$C_pm$sd()
 model$prior$mu$plot_density()
 ```
 
-<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-22-1.png" width="100%" />
 
 ## The `stat` Parameter
 
@@ -317,4 +344,4 @@ model$posterior$C_pm$plot_density(
   add = TRUE, col = "steelblue", lwd = 1.5)
 ```
 
-<img src="man/figures/README-unnamed-chunk-20-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-23-1.png" width="100%" />

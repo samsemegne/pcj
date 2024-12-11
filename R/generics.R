@@ -57,6 +57,34 @@ plot_posterior_density = function(object, ...) {
 
 
 #' @export
+plot_posterior_predictive_density = function(object, ...) {
+  UseMethod("plot_posterior_predictive_density")
+}
+
+
+#' @export
+plot_prior_mass = function(object, ...) UseMethod("plot_prior_mass")
+
+
+#' @export
+plot_prior_predictive_mass = function(object, ...) {
+  UseMethod("plot_prior_predictive_mass")
+}
+
+
+#' @export
+plot_posterior_mass = function(object, ...) {
+  UseMethod("plot_posterior_mass")
+}
+
+
+#' @export
+plot_posterior_predictive_mass = function(object, ...) {
+  UseMethod("plot_posterior_predictive_mass")
+}
+
+
+#' @export
 has_probability_density = function(object, ...) {
   UseMethod("has_probability_density")
 }
