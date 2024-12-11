@@ -70,9 +70,7 @@ plot.pcj_plot_object = function(object) {
     stop()
   )
 
-  obj = preprocess_pcj_plot_object(object)
-
-  do.call(func, get_result(obj)$args)
+  do.call(func, get_result(object)$args)
 
   return(invisible(object))
 }
@@ -116,41 +114,41 @@ c.pcj_plot_object = function(object, ...) {
 }
 
 
-preprocess_pcj_plot_object = function(object) {
-  stopifnot(is.pcj_plot_object(object))
-
-  args = get_result(object)$args
-
-  if ("offset" %in% names(get_result(object)$meta)) {
-    offset = get_result(object)$meta$offset
-
-    if (get_result(object)$func == "arrows") {
-      if (vek::is_num_vec(args$x0))
-        args$x0 = args$x0 + offset[1L]
-
-      if (vek::is_num_vec(args$x1))
-        args$x1 = args$x1 + offset[1L]
-
-      if (vek::is_num_vec(args$y0))
-        args$y0 = args$y0 + offset[2L]
-
-      if (vek::is_num_vec(args$y1))
-        args$y1 = args$y1 + offset[2L]
-
-    } else {
-      if (vek::is_num_vec(args$x))
-        args$x = args$x + offset[1L]
-
-      if (vek::is_num_vec(args$y))
-        args$y = args$y + offset[2L]
-    }
-
-    # TODO add else. and axis offset?
-  }
-
-  object$result$args = args
-  return(object)
-}
+#preprocess_pcj_plot_object = function(object) {
+#  stopifnot(is.pcj_plot_object(object))
+#
+#  args = get_result(object)$args
+#
+#  if ("offset" %in% names(get_result(object)$meta)) {
+#    offset = get_result(object)$meta$offset
+#
+#    if (get_result(object)$func == "arrows") {
+#      if (vek::is_num_vec(args$x0))
+#        args$x0 = args$x0 + offset[1L]
+#
+#      if (vek::is_num_vec(args$x1))
+#        args$x1 = args$x1 + offset[1L]
+#
+#      if (vek::is_num_vec(args$y0))
+#        args$y0 = args$y0 + offset[2L]
+#
+#      if (vek::is_num_vec(args$y1))
+#        args$y1 = args$y1 + offset[2L]
+#
+#    } else {
+#      if (vek::is_num_vec(args$x))
+#        args$x = args$x + offset[1L]
+#
+#      if (vek::is_num_vec(args$y))
+#        args$y = args$y + offset[2L]
+#    }
+#
+#    # TODO add else. and axis offset?
+#  }
+#
+#  object$result$args = args
+#  return(object)
+#}
 
 
 # Functions to facilitate piping.

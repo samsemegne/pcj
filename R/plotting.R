@@ -144,6 +144,7 @@ plot_posterior_density.pcj_process_capability_model1 = function(
 
 
 # TODO
+# TODO apply offset
 plot_point_prior = function(
     object,
     ...,
@@ -450,6 +451,11 @@ plot_prior_ = function(
     x = c(0L, x[x > 0L])
   }
 
+  if (offset[1L] != 0L)
+    x = x + offset[1L]
+  if (offset[2L] != 0L)
+    y = y + offset[2L]
+
   if ("xlim" %in% names(dots))
     xlim = dots$xlim
   else
@@ -711,16 +717,20 @@ plot_prior_predictive_ = function(
     stop()
   }
 
+  if (offset[1L] != 0L)
+    xy$x = xy$x + offset[1L]
+  if (offset[2L] != 0L)
+    xy$y = xy$y + offset[2L]
+
   xlim = NULL
   if ("xlim" %in% names(dots))
     xlim = dots$xlim
-
-  if (is.null(xlim)) {
-    if (length(xy$x) == 1L)
-      xlim = c(-.5, .5) + xy$x
-    else
-      xlim = range(xy$x, na.rm = TRUE)
-  }
+  else if (length(x) == 1L)
+    xlim = c(-.5, .5) + xy$x
+  else if (length(x) > 1L)
+    xlim = range(xy$x, na.rm = TRUE)
+  else
+    stop()
 
   xlim_check = check_lim(xlim, "x")
   throw_first_error(xlim_check)
@@ -929,18 +939,6 @@ plot_posterior_ = function(
   dens_obj = get_result(stat_result)$density
   dens_obj = dens_obj() |> unclass()
 
-  # TODO determining xlim when graphics == points
-  xlim = NULL
-  if ("xlim" %in% names(dots))
-    xlim = dots$xlim # TODO check dots$xlim earlier
-  else
-    xlim = range(x, na.rm = TRUE)
-
-  xlim_check = check_lim(xlim, "x")
-  throw_first_error(xlim_check)
-  rm(xlim_check)
-
-
   if (is.function(dens_obj)) {
     y_obj = pcj_safely(dens_obj(x)) # TODO check condition
     y = get_result(y_obj)
@@ -1002,6 +1000,25 @@ plot_posterior_ = function(
   } else {
     stop()
   }
+
+  if (offset[1L] != 0L)
+    xy$x = xy$x + offset[1L]
+  if (offset[2L] != 0L)
+    xy$y = xy$y + offset[2L]
+
+  xlim = NULL
+  if ("xlim" %in% names(dots))
+    xlim = dots$xlim
+  else if (length(x) == 1L)
+    xlim = c(-.5, .5) + xy$x
+  else if (length(x) > 1L)
+    xlim = range(xy$x, na.rm = TRUE)
+  else
+    stop()
+
+  xlim_check = check_lim(xlim, "x")
+  throw_first_error(xlim_check)
+  rm(xlim_check)
 
   xlab = get_var_lab(what)
   #legend = xlab

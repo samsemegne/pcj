@@ -56,13 +56,11 @@ gg_build = function(object) {
   })
 
   if (is.pcj_plot_object(object)) {
-    obj = preprocess_pcj_plot_object(object)
     return(pcj_plot_object_to_ggplot2(obj))
   }
   else if (is.pcj_plot_object_list(object)) {
     ggobj = NULL
     for (obj in object) {
-      obj = preprocess_pcj_plot_object(obj)
       ggobj_ = pcj_plot_object_to_ggplot2(obj)
       if (is.null(ggobj))
         ggobj = ggobj_
