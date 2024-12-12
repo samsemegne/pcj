@@ -8,23 +8,38 @@ is.pcj_sequential_procedure = function(object, ...) {
 #' @export
 new_pcj_sequential_procedure = function(
     model,
-    at
+    at,
+    evaluate = FALSE
   )
 {
   stopifnot(exprs = {
     # TODO check model
 
     vek::is_int_vec_x(at)
+    vek::is_lgl_vec_x1(evaluate)
     length(at) > 1L
     !is.unsorted(at, na.rm = FALSE, strictly = TRUE)
     all(at > 0L, na.rm = FALSE) # TODO min sample size?
   })
 
+  if (!evaluate) {
+    obj = new_pcj_result(list(
+      fit = list(model),
+      at = at,
+      evaluate = evaluate
+    )) |>
+      unclass()
+
+    obj = as.environment(obj)
+    class(obj) = "pcj_sequential_procedure"
+    return(obj)
+  }
+
   result = list()
   for (i in 1:length(at)) {
     n = at[i]
     dat = utils::head(get_data(model), n)
-    obj = update(model, data = dat, evaluate = TRUE)
+    obj = stats::update(model, data = dat, evaluate = TRUE)
 
     result[[length(result) + 1L]] = obj
   }
@@ -70,11 +85,10 @@ update.pcj_sequential_procedure = function(object, ...) {
   res = get_result(object)
   last_model = res$fit[[length(res$fit)]]
 
-  #browser()
-
   obj = new_pcj_sequential_procedure(
     dots$model %||% last_model,
-    dots$at %||%res$at
+    dots$at %||% res$at,
+    dots$evaluate %||% FALSE
   )
 
   return(obj)

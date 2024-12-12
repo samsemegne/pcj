@@ -76,13 +76,13 @@ PcjSequentialProcedure = R6::R6Class(
   ),
 
   public = list(
-    update = function(model, at) {
+    update = function(model, at, evaluate = FALSE) {
       if (is.null(private$content_)) {
         if (any(missing(model), missing(at), na.rm = FALSE)) {
           stop('All required parameters must be specified')
         }
 
-        obj = new_pcj_sequential_procedure(model, at)
+        obj = new_pcj_sequential_procedure(model, at, evaluate)
       } else {
         args = list(object = self$content)
         if (!missing(model))
@@ -90,13 +90,12 @@ PcjSequentialProcedure = R6::R6Class(
         if (!missing(at))
           args$at = at
 
-        #browser()
+        args$evaluate = evaluate
 
         obj = do.call(update, args)
       }
 
       private$content_ = obj
-      #browser()
     },
 
     summary = function() return(summary(self$content)),

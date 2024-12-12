@@ -131,17 +131,14 @@ model = stats::update(model, prior_mu = 1L, evaluate = TRUE)
 ```
 
 ``` r
-plot_prior_mass(model, what = "mu")
+layout(t(matrix(1:2, 2L)))
+
+pcj::plot_prior_mass(model, what = "mu")
+
+pcj::plot_posterior_mass(model, what = "mu", graphics = "arrows")
 ```
 
 <img src="man/figures/README-unnamed-chunk-9-1.png" width="100%" />
-
-``` r
-
-plot_posterior_mass(model, what = "mu", graphics = "arrows")
-```
-
-<img src="man/figures/README-unnamed-chunk-9-2.png" width="100%" />
 
 ``` r
 model = stats::update(
@@ -173,7 +170,11 @@ pcj::plot_posterior_density(
 ## Sequential Procedure
 
 ``` r
-seq_proc = pcj::new_pcj_sequential_procedure(model, c(20L, 25L, 30L))
+seq_proc = pcj::new_pcj_sequential_procedure(
+  model, 
+  c(20L, 25L, 30L), 
+  evaluate = TRUE
+)
 #> NOTE: Stopping adaptation
 #> 
 #> 
