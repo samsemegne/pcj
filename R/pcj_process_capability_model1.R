@@ -115,6 +115,14 @@ get_condition.pcj_process_capability_model1 = get_condition_
 get_result.pcj_process_capability_model1 = get_result_
 
 
+
+#' @export
+is_ready.pcj_process_capability_model1 = function(object) {
+  stopifnot(is.pcj_process_capability_model1(object))
+  return(TRUE)
+}
+
+
 #' @export
 update.pcj_process_capability_model1 = function(object, ...) {
   stopifnot(exprs = {

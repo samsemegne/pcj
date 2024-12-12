@@ -33,6 +33,13 @@ PcjProcessCapabilityModel1 = R6::R6Class(
         stop(runtimeError("Runtime error"))
     },
 
+    is_ready = function(value) {
+      if (missing(value))
+        return(is_ready(self$content))
+      else
+        stop(runtimeError("Runtime error"))
+    },
+
     error = function(value) {
       if (missing(value))
         return(get_error(self$content))
@@ -239,6 +246,12 @@ get_output.PcjProcessCapabilityModel1 = function(object) {
 #' @export
 get_result.PcjProcessCapabilityModel1 = function(object) {
   return(get_result(object$content))
+}
+
+
+#' @export
+is_ready.PcjProcessCapabilityModel1 = function(object) {
+  return(object$is_ready)
 }
 
 

@@ -1,6 +1,10 @@
 
 
 #' @export
+is_ready = function(object, ...) UseMethod("is_ready")
+
+
+#' @export
 get_data = function(object, ...) UseMethod("get_data")
 
 

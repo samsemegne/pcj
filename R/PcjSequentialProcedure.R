@@ -18,6 +18,12 @@ PcjSequentialProcedure = R6::R6Class(
         stop(runtimeError("Runtime error"))
     },
 
+    is_ready = function(value) {
+      if (missing(value))
+        return(is_ready(self$content))
+      else
+        stop(runtimeError("Runtime error"))
+    },
 
     condition = function(value) {
       if (missing(value))
@@ -138,7 +144,10 @@ get_result.PcjSequentialProcedure = function(object) {
 
 
 #' @export
-update.PcjSequentialProcedure = function(object, ...) {
-  return(object$update(...))
-}
+is_ready.PcjSequentialProcedure = function(object) return(object$is_ready)
+
+
+#' @export
+update.PcjSequentialProcedure = function(object, ...) return(object$update(...))
+
 

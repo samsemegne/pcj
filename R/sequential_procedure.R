@@ -94,6 +94,13 @@ get_result.pcj_sequential_procedure = get_result_
 
 
 #' @export
+is_ready.pcj_sequential_procedure = function(object) {
+  stopifnot(is.pcj_sequential_procedure(object))
+  return(is_ready(get_result(object)$fit[[1L]]))
+}
+
+
+#' @export
 summary.pcj_sequential_procedure = function(object, ...) {
   stopifnot(is.pcj_sequential_procedure(object))
 
