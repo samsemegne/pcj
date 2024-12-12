@@ -345,3 +345,16 @@ model$posterior$C_pm$plot_density(
 ```
 
 <img src="man/figures/README-unnamed-chunk-23-1.png" width="100%" />
+
+# Making JASP Plots
+
+``` r
+options(pcj.graphics_driver = "ggplot2")
+
+pcj::plot_sequential_procedure(seq_proc, what = "C_pm", display = "ridges") |>
+  plot(as = "ggplot2") +
+  jaspGraphs::geom_rangeframe() +
+  jaspGraphs::themeJaspRaw()
+```
+
+<img src="man/figures/README-unnamed-chunk-24-1.png" width="100%" />

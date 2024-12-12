@@ -23,10 +23,21 @@ print.pcj_plot_object_list = function(object) {
 
 
 #' @export
-plot.pcj_plot_object_list = function(object) {
+plot.pcj_plot_object_list = function(object, as) {
   stopifnot(is.pcj_plot_object_list(object))
 
   graphics_driver = get_graphics_driver()
+
+  if (!missing(as)) {
+    stopifnot(exprs = {
+      vek::is_chr_vec_x1(as)
+      as %in% c("ggplot2")
+      graphics_driver == "ggplot2"
+    })
+
+    ggobj = gg_build(object)
+    return(ggobj)
+  }
 
   if (graphics_driver == "graphics") {
     for (obj in object) {
